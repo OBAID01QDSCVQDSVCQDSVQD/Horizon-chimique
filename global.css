@@ -1,0 +1,24 @@
+.h2-bold {
+  @apply font-bold text-lg lg:text-xl;
+}
+
+.quantity-input {
+  border: 2px solid #333;
+  border-radius: 6px;
+  font-weight: bold;
+  width: 60px;
+  text-align: center;
+  height: 32px;
+  transition: border 0.2s;
+}
+
+.quantity-input:focus {
+  border-color: #16a34a;
+  outline: none;
+  box-shadow: 0 0 0 2px #bbf7d0;
+} 
+
+.highlight-link a,
+a.highlight-link {
+  @apply text-sky-700  hover:text-orange-700 hover:underline;
+}
