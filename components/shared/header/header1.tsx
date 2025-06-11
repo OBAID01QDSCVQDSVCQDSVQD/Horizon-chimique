@@ -1,5 +1,5 @@
 'use client'
-import { FaFacebook, FaInstagram, FaTwitter, FaMoon } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaTwitter, FaMoon, FaSun } from 'react-icons/fa';
 import { useTheme } from '@/lib/use-theme';
 
 export default function TopHeader() {
@@ -21,7 +21,7 @@ export default function TopHeader() {
           aria-label="Toggle dark mode"
           onClick={toggleTheme}
         >
-          <FaMoon className="text-lg" />
+          {theme === 'dark' ? <FaSun className="text-lg" /> : <FaMoon className="text-lg" />}
         </button>
         <a href="#" className="hover:text-gray-300"><FaTwitter /></a>
         <a href="#" className="hover:text-gray-300"><FaFacebook /></a>

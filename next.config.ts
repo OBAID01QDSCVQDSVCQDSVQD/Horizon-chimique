@@ -7,6 +7,13 @@ const nextConfig: NextConfig = {
   experimental: {
     // (لا تضع allowedDevOrigins هنا)
   },
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.json$/,
+      type: 'json',
+    });
+    return config;
+  },
 };
 
 export default nextConfig;

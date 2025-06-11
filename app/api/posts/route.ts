@@ -62,9 +62,9 @@ export async function POST(request: Request) {
     }
 
     const { description, imageUrls } = await request.json()
-    if (!description || !imageUrls || !imageUrls.length) {
+    if (!description) {
       return NextResponse.json(
-        { error: 'Description and images are required' },
+        { error: 'Description is required' },
         { status: 400 }
       )
     }

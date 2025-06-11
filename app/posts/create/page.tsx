@@ -7,7 +7,7 @@ export default async function CreatePostPage() {
   const session = await getServerSession(authConfig)
 
   if (!session) {
-    redirect('/auth/signin')
+    redirect('/sign-in')
   }
 
   return (

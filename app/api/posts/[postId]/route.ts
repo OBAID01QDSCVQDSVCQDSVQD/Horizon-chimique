@@ -9,7 +9,8 @@ import { NextRequest } from 'next/server'
 export async function GET(req: NextRequest, context: any) {
   try {
     await connectToDatabase()
-    const postId = context?.params?.postId
+    const { params } = await context;
+    const postId = params?.postId;
     
     const post = await Post.findById(postId)
       .populate({
@@ -59,7 +60,9 @@ export async function POST(req: NextRequest, context: any) {
     }
 
     await connectToDatabase()
-    const post = await Post.findById(context?.params?.postId)
+    const { params } = await context;
+    const postId = params?.postId;
+    const post = await Post.findById(postId)
     if (!post) {
       return NextResponse.json(
         { error: 'Post not found' },
@@ -109,7 +112,9 @@ export async function PUT(req: NextRequest, context: any) {
     }
 
     await connectToDatabase()
-    const post = await Post.findById(context?.params?.postId)
+    const { params } = await context;
+    const postId = params?.postId;
+    const post = await Post.findById(postId)
     if (!post) {
       return NextResponse.json(
         { error: 'Post not found' },
@@ -133,6 +138,133 @@ export async function PUT(req: NextRequest, context: any) {
     console.error('Error adding comment:', error)
     return NextResponse.json(
       { error: 'Internal Server Error', details: (error as any)?.message },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/posts/[postId] - حذف بوست
+export async function DELETE(req: NextRequest, context: any) {
+  try {
+    const session = await getServerSession(authConfig)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { params } = await context
+    const postId = params?.postId
+
+    await connectToDatabase()
+    const post = await Post.findById(postId)
+
+    if (!post) {
+      return NextResponse.json(
+        { error: 'Post not found' },
+        { status: 404 }
+      )
+    }
+
+    // التحقق من أن المستخدم هو صاحب البوست
+    if (post.userId.toString() !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // التحقق من الوقت (24 ساعة)
+    const postDate = new Date(post.createdAt)
+    const now = new Date()
+    const diffInHours = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60)
+    
+    if (diffInHours > 24) {
+      return NextResponse.json(
+        { error: 'Cannot delete post after 24 hours' },
+        { status: 400 }
+      )
+    }
+
+    await Post.findByIdAndDelete(postId)
+    return NextResponse.json({ message: 'Post deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting post:', error)
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH /api/posts/[postId] - تعديل بوست
+export async function PATCH(req: NextRequest, context: any) {
+  try {
+    const session = await getServerSession(authConfig)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { params } = await context
+    const postId = params?.postId
+    const { description } = await req.json()
+
+    if (!description) {
+      return NextResponse.json(
+        { error: 'Description is required' },
+        { status: 400 }
+      )
+    }
+
+    await connectToDatabase()
+    const post = await Post.findById(postId)
+
+    if (!post) {
+      return NextResponse.json(
+        { error: 'Post not found' },
+        { status: 404 }
+      )
+    }
+
+    // التحقق من أن المستخدم هو صاحب البوست
+    if (post.userId.toString() !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // التحقق من الوقت (24 ساعة)
+    const postDate = new Date(post.createdAt)
+    const now = new Date()
+    const diffInHours = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60)
+    
+    if (diffInHours > 24) {
+      return NextResponse.json(
+        { error: 'Cannot edit post after 24 hours' },
+        { status: 400 }
+      )
+    }
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      postId,
+      { description },
+      { new: true }
+    ).populate({
+      path: 'userId',
+      select: 'name image email',
+      model: 'User'
+    })
+
+    return NextResponse.json(updatedPost)
+  } catch (error) {
+    console.error('Error updating post:', error)
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
       { status: 500 }
     )
   }

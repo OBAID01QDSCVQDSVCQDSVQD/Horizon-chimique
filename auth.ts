@@ -15,7 +15,7 @@ export const authConfig: AuthOptions = {
     strategy: 'jwt',
   },
   pages: {
-    signIn: '/auth/signin',
+    signIn: '/sign-in',
   },
   providers: [
     GoogleProvider({

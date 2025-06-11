@@ -11,7 +11,7 @@ export default async function middleware(request: NextRequestWithAuth) {
   // التحقق من وجود المستخدم
   if (!token) {
     console.log('Middleware: No token found, redirecting to signin')
-    return NextResponse.redirect(new URL('/auth/signin', request.url))
+    return NextResponse.redirect(new URL('/sign-in', request.url))
   }
 
   // التحقق من صلاحيات الأدمن

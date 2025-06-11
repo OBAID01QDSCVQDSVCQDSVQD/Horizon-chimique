@@ -10,7 +10,7 @@ export default async function AdminPage() {
 
   if (!session) {
     console.log('Admin Page: No session, redirecting to signin')
-    redirect('/auth/signin')
+    redirect('/sign-in')
   }
 
   const userRole = (session.user.role as string)?.toUpperCase()

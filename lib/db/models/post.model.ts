@@ -18,7 +18,7 @@ const postSchema = new Schema<IPost>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     description: { type: String, required: true },
-    imageUrls: [{ type: String, required: true }],
+    imageUrls: [{ type: String, required: false }],
     likes: [{ type: String }],
     comments: [{
       userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },

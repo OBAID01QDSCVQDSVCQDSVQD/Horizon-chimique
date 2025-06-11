@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 import { CldUploadButton } from 'next-cloudinary'
-import { Image as ImageIcon, Loader2, X } from 'lucide-react'
+import { Image as ImageIcon, Loader2, X, Smile, Bold } from 'lucide-react'
+import Picker from '@emoji-mart/react'
+import data from '@emoji-mart/data'
 
 export default function CreatePostForm() {
   const router = useRouter()
@@ -13,6 +15,9 @@ export default function CreatePostForm() {
   const [description, setDescription] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,10 +28,6 @@ export default function CreatePostForm() {
 
     if (!description.trim()) {
       toast.error('Veuillez écrire une description pour la publication')
-      return
-    }
-    if (imageUrls.length === 0) {
-      toast.error('Veuillez ajouter au moins une image')
       return
     }
 
@@ -70,6 +71,30 @@ export default function CreatePostForm() {
     setImageUrls((prev) => prev.filter((_, i) => i !== idx))
   }
 
+  const insertEmoji = (emoji: any) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const before = description.substring(0, start)
+    const after = description.substring(end)
+    setDescription(before + emoji.native + after)
+    setTimeout(() => {
+      textarea.focus()
+      textarea.selectionStart = textarea.selectionEnd = start + emoji.native.length
+    }, 0)
+  }
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (showEmojiPicker && emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showEmojiPicker])
+
   console.log('Nom du cloud :', process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME)
 
   return (
@@ -78,27 +103,86 @@ export default function CreatePostForm() {
       className="max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-8 space-y-6 border border-gray-100"
     >
       <h2 className="text-2xl font-bold text-center mb-2 text-blue-700">Créer une nouvelle publication</h2>
-      <div>
+      <div className="relative">
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
           Description <span className="text-red-500">*</span>
         </label>
-        <textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition resize-none min-h-[100px] bg-gray-50"
-          rows={4}
-          placeholder="Écrivez la description de votre publication..."
-        />
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker(v => !v)}
+            className="p-2 rounded-full hover:bg-blue-100 text-gray-500 hover:text-blue-500 transition"
+            tabIndex={-1}
+            aria-label="Ajouter un emoji"
+          >
+            <Smile className="w-6 h-6" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = textareaRef.current;
+              if (!textarea) return;
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              const before = description.substring(0, start);
+              const selected = description.substring(start, end);
+              const after = description.substring(end);
+              setDescription(before + '**' + selected + '**' + after);
+              setTimeout(() => {
+                textarea.focus();
+                textarea.selectionStart = textarea.selectionEnd = end + 4;
+              }, 0);
+            }}
+            className="p-2 rounded-full hover:bg-blue-100 text-gray-500 hover:text-blue-500 transition"
+            tabIndex={-1}
+            aria-label="Gras"
+          >
+            <Bold className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <textarea
+            id="description"
+            ref={textareaRef}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition resize-none min-h-[100px] bg-gray-50"
+            rows={4}
+            placeholder="Écrivez la description de votre publication..."
+          />
+        </div>
+        {showEmojiPicker && (
+          <div
+            ref={emojiPickerRef}
+            className="fixed z-50"
+            style={{
+              top: '80px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 350,
+              maxWidth: '95vw',
+              borderRadius: 16,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+              background: 'var(--background, #222)'
+            }}
+          >
+            <Picker
+              data={data}
+              locale="fr"
+              theme="auto"
+              onEmojiSelect={insertEmoji}
+            />
+          </div>
+        )}
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Images <span className="text-gray-400">(max 5)</span>
+          Images <span className="text-gray-400">(max 10)</span>
         </label>
         <CldUploadButton
           uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-          options={{ multiple: true, maxFiles: 5 }}
+          options={{ multiple: true, maxFiles: 10 }}
           onUpload={handleUpload}
           className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 cursor-pointer transition"
         >

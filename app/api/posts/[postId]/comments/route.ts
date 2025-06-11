@@ -26,9 +26,10 @@ export async function DELETE(req: NextRequest, context: any) {
 
   post.comments.splice(index, 1)
   await post.save()
-  // Populate user info for comments
-  await post.populate('comments.userId', 'name image email')
-  return NextResponse.json({ comments: post.comments }, { status: 200 })
+  // Re-fetch with full populate
+  const populatedPost = await Post.findById(postId).populate('comments.userId', 'name image email')
+  if (!populatedPost) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+  return NextResponse.json({ comments: populatedPost.comments }, { status: 200 })
 }
 
 export async function PUT(req: NextRequest, context: any) {
@@ -55,7 +56,8 @@ export async function PUT(req: NextRequest, context: any) {
 
   post.comments[index].comment = comment
   await post.save()
-  // Populate user info for comments
-  await post.populate('comments.userId', 'name image email')
-  return NextResponse.json({ comments: post.comments }, { status: 200 })
+  // Re-fetch with full populate
+  const populatedPost = await Post.findById(postId).populate('comments.userId', 'name image email')
+  if (!populatedPost) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+  return NextResponse.json({ comments: populatedPost.comments }, { status: 200 })
 } 
