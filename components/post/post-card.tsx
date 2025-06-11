@@ -78,6 +78,7 @@ export default function PostCard({ post, onComment }: PostCardProps) {
   const [htmlDescription, setHtmlDescription] = useState('')
   const router = useRouter()
   const pathname = usePathname()
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   const isAuthor = session?.user?.email === post.userId.email
   const postDate = new Date(post.createdAt)
@@ -135,7 +136,7 @@ export default function PostCard({ post, onComment }: PostCardProps) {
 
   const handleLike = async () => {
     if (!session) {
-      toast.error("Vous devez vous connecter d'abord")
+      setShowAuthModal(true)
       return
     }
 
@@ -165,7 +166,7 @@ export default function PostCard({ post, onComment }: PostCardProps) {
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!session) {
-      toast.error("Vous devez vous connecter d'abord")
+      setShowAuthModal(true)
       return
     }
     if (!comment.trim()) {
@@ -626,50 +627,48 @@ export default function PostCard({ post, onComment }: PostCardProps) {
       </div>
 
       {showImageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/10"
+          onClick={() => setShowImageModal(false)}
+        >
           <button
-            onClick={() => setShowImageModal(false)}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200"
+            className="absolute top-4 right-4 text-white bg-black/60 rounded-full p-2 z-50"
+            onClick={e => { e.stopPropagation(); setShowImageModal(false); }}
+            aria-label="Fermer"
           >
-            <X className="w-8 h-8" />
+            <X className="w-6 h-6" />
           </button>
-          {post.imageUrls.length > 1 && (
-            <>
-              <button
-                onClick={handlePrevImage}
-                className="absolute left-4 text-white hover:text-gray-300 transition-colors duration-200"
-              >
-                <ChevronLeft className="w-12 h-12" />
-              </button>
-              <button
-                onClick={handleNextImage}
-                className="absolute right-4 text-white hover:text-gray-300 transition-colors duration-200"
-              >
-                <ChevronRight className="w-12 h-12" />
-              </button>
-            </>
-          )}
           <div
-            className="relative w-full h-full max-w-7xl max-h-[90vh] mx-4 flex items-center justify-center cursor-pointer"
-            onClick={handleNextImage}
+            className="relative w-full max-w-2xl h-[60vh] flex items-center justify-center cursor-pointer"
+            onClick={e => {
+              e.stopPropagation();
+              setCurrentImageIndex((prev) => (prev + 1) % post.imageUrls.length);
+            }}
           >
             <Image
               src={post.imageUrls[currentImageIndex]}
-              alt={`Image ${currentImageIndex + 1}`}
+              alt={`Image de la publication ${currentImageIndex + 1}`}
               fill
-              className="object-contain"
+              className="object-contain rounded-lg shadow-lg"
             />
-          </div>
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-            {post.imageUrls.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentImageIndex(idx)}
-                className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                  idx === currentImageIndex ? 'bg-white' : 'bg-gray-500'
-                }`}
-              />
-            ))}
+            {post.imageUrls.length > 1 && (
+              <>
+                <button
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-2"
+                  onClick={e => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + post.imageUrls.length) % post.imageUrls.length); }}
+                  aria-label="Précédente"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-2"
+                  onClick={e => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % post.imageUrls.length); }}
+                  aria-label="Suivante"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -722,6 +721,37 @@ export default function PostCard({ post, onComment }: PostCardProps) {
                 Enregistrer les modifications
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showAuthModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowAuthModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 max-w-[320px] w-full text-center border border-gray-100 dark:border-gray-800"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="mb-2 text-base font-semibold text-gray-800 dark:text-gray-100">Attention</div>
+            <div className="mb-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              Vous devez vous connecter ou créer un compte pour pouvoir laisser un commentaire ou aimer une publication.
+            </div>
+            <div className="flex gap-2 justify-center mb-2">
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-sm shadow"
+                onClick={() => { router.push('/sign-in'); setShowAuthModal(false); }}
+              >Se connecter</button>
+              <button
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-1.5 px-3 rounded text-sm border border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
+                onClick={() => { router.push('/sign-up'); setShowAuthModal(false); }}
+              >Créer un compte</button>
+            </div>
+            <button
+              className="mt-1 text-xs text-gray-500 hover:underline"
+              onClick={() => setShowAuthModal(false)}
+            >Fermer</button>
           </div>
         </div>
       )}

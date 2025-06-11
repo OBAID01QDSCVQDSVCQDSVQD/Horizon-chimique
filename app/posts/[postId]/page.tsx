@@ -2,6 +2,8 @@ import { getServerSession } from 'next-auth'
 import { notFound } from 'next/navigation'
 import { authConfig } from '@/auth'
 import PostCard from '@/components/post/post-card'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 async function getPost(postId: string) {
   const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/posts/${postId}`, {
@@ -23,6 +25,12 @@ export default async function PostPage(props: any) {
 
   return (
     <div className="container mx-auto p-4">
+      <div className="max-w-2xl mx-auto mb-4">
+        <Link href="/posts" className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-medium transition-colors text-sm">
+          <ArrowLeft className="w-4 h-4" />
+          Voir toutes les publications
+        </Link>
+      </div>
       <div className="max-w-2xl mx-auto">
         <PostCard
           post={post}
