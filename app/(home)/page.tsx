@@ -6,6 +6,7 @@ import { getAllCategories, getProductsForCard, getProductsByTag } from '@/lib/ac
 import ProductSlider from '@/components/shared/product/product-slider'
 import BrowsingHistoryList from '@/components/shared/browsing-history-list'
 import BookingButtonWithModal from '@/components/BookingButtonWithModal'
+import ReelsSection from '@/components/home/ReelsSection'
 
 export default async function HomePage() {
   const categories = (await getAllCategories()).slice(0, 4)
@@ -66,6 +67,8 @@ export default async function HomePage() {
     <>
       <HomeCarousel items={data.carousels} />
       <BookingButtonWithModal />
+      {/* Reels Section */}
+      <ReelsSection />
       <div className='md:p-4 md:space-y-4 bg-border'>
         <HomeCard cards={cards} />
         <Card className='w-full rounded-none'>

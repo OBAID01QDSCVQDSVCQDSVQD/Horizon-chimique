@@ -14,6 +14,7 @@ import { Grid } from '@giphy/react-components'
 import Picker from '@emoji-mart/react'
 import data from '@emoji-mart/data'
 import { marked } from 'marked'
+import { useRouter, usePathname } from 'next/navigation'
 
 interface Post {
   _id: string
@@ -75,6 +76,8 @@ export default function PostCard({ post, onComment }: PostCardProps) {
   const [editDescription, setEditDescription] = useState(post.description)
   const [timeAgo, setTimeAgo] = useState('')
   const [htmlDescription, setHtmlDescription] = useState('')
+  const router = useRouter()
+  const pathname = usePathname()
 
   const isAuthor = session?.user?.email === post.userId.email
   const postDate = new Date(post.createdAt)
@@ -317,6 +320,21 @@ export default function PostCard({ post, onComment }: PostCardProps) {
     }
   }
 
+  const goToPost = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    router.push(`/posts/${post._id}`);
+  };
+
+  const handleAfficherTout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (pathname.startsWith('/posts')) {
+      setShowFullDescription(true);
+    } else {
+      goToPost();
+    }
+  };
+
   return (
     <>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-colors duration-200">
@@ -393,21 +411,19 @@ export default function PostCard({ post, onComment }: PostCardProps) {
           </div>
         </div>
         <div className="p-4">
-          <Link href={`/posts/${post._id}`} className="block">
-            <div className="mb-4">
-              <p
-                className={`text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-line ${!showFullDescription ? 'line-clamp-4' : ''}`}
-                dangerouslySetInnerHTML={{ __html: htmlDescription }}
-              />
-              {isLongDescription && !showFullDescription && (
-                <button
-                  type="button"
-                  className="text-[#00AEEF] hover:underline text-sm mt-1 font-semibold"
-                  onClick={e => { e.preventDefault(); setShowFullDescription(true); }}
-                >Afficher tout</button>
-              )}
-            </div>
-          </Link>
+          <div className="mb-4 cursor-pointer" onClick={goToPost}>
+            <p
+              className={`text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-line ${!showFullDescription ? 'line-clamp-4' : ''}`}
+              dangerouslySetInnerHTML={{ __html: htmlDescription }}
+            />
+            {isLongDescription && !showFullDescription && (
+              <button
+                type="button"
+                className="text-[#00AEEF] hover:underline text-sm mt-1 font-semibold"
+                onClick={handleAfficherTout}
+              >Afficher tout</button>
+            )}
+          </div>
 
           <div className="w-full mb-4">
             <div
@@ -429,7 +445,14 @@ export default function PostCard({ post, onComment }: PostCardProps) {
                       ? 'h-64'
                       : 'h-48'
                   }`}
-                  onClick={() => handleImageClick(idx)}
+                  onClick={(e) => {
+                    if (pathname.startsWith('/posts')) {
+                      e.stopPropagation();
+                      handleImageClick(idx);
+                    } else {
+                      goToPost();
+                    }
+                  }}
                 >
                   <Image
                     src={url}
@@ -457,7 +480,7 @@ export default function PostCard({ post, onComment }: PostCardProps) {
               <Heart className={isLiked ? 'fill-current' : ''} />
               <span>{likesCount}</span>
             </button>
-            <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400">
+            <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 cursor-pointer" onClick={goToPost}>
               <MessageCircle />
               <span>{comments.length}</span>
             </div>

@@ -22,3 +22,12 @@
 a.highlight-link {
   @apply text-sky-700  hover:text-orange-700 hover:underline;
 }
+
+/* إخفاء شريط التمرير الأفقي والعمودي عند استخدام كلاس scrollbar-hide */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

@@ -9,7 +9,7 @@ import { NextRequest } from 'next/server'
 export async function GET(req: NextRequest, context: any) {
   try {
     await connectToDatabase()
-    const { params } = await context;
+    const { params } = context;
     const postId = params?.postId;
     
     const post = await Post.findById(postId)
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, context: any) {
     }
 
     await connectToDatabase()
-    const { params } = await context;
+    const { params } = context;
     const postId = params?.postId;
     const post = await Post.findById(postId)
     if (!post) {
@@ -112,7 +112,7 @@ export async function PUT(req: NextRequest, context: any) {
     }
 
     await connectToDatabase()
-    const { params } = await context;
+    const { params } = context;
     const postId = params?.postId;
     const post = await Post.findById(postId)
     if (!post) {
@@ -154,7 +154,7 @@ export async function DELETE(req: NextRequest, context: any) {
       )
     }
 
-    const { params } = await context
+    const { params } = context
     const postId = params?.postId
 
     await connectToDatabase()
@@ -209,7 +209,7 @@ export async function PATCH(req: NextRequest, context: any) {
       )
     }
 
-    const { params } = await context
+    const { params } = context
     const postId = params?.postId
     const { description } = await req.json()
 

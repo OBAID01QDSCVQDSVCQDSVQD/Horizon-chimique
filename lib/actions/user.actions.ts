@@ -23,7 +23,7 @@ export async function registerUser(data: any) {
       name: parsed.name,
       email: parsed.email,
       password: hashedPassword,
-      role: 'User',
+      role: 'USER',
       emailVerified: false,
       whatsapp: parsed.whatsapp,
     })
