@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar } from 'react-icons/fi'
+import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar, FiShield } from 'react-icons/fi'
 import { useState } from 'react'
 
 // تعريف ثابت لقائمة لوحة التحكم
@@ -31,6 +31,11 @@ const menuItems = [
     title: 'Attributs',
     href: '/admin/attributes',
     icon: FiTag
+  },
+  {
+    title: 'Garanties',
+    href: '/admin/garanties',
+    icon: FiShield
   },
   {
     title: 'Paramètres',

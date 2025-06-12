@@ -59,7 +59,7 @@ export const authConfig: AuthOptions = {
         };
         console.log('Auth: Returning user data:', userData);
         return userData;
-      }
+        }
     })
   ],
   callbacks: {
@@ -81,6 +81,6 @@ export const authConfig: AuthOptions = {
         session.user.role = token.role as string;
       }
       return session;
-    }
+      }
   }
 }

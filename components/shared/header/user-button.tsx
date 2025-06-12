@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { ChevronDown, UserIcon } from 'lucide-react'
+import { FaUserShield } from 'react-icons/fa'
 
 interface UserButtonProps {
   onClose?: () => void;
@@ -52,10 +53,15 @@ export default function UserButton({ onClose, isMobileOverlay }: UserButtonProps
         {session ? (
             <>
               <div className="px-4 py-2 border-b border-gray-200">
-                <div className="font-bold">{session.user?.name}</div>
+                <div className="font-bold flex items-center gap-2">
+                  {session.user?.name}
+                  {(session.user?.role === 'APPLICATEUR' || session.user?.role === 'ADMIN') && (
+                    <FaUserShield className="text-blue-500" title={session.user?.role} />
+                  )}
+                </div>
                 <div className="text-xs text-gray-500">{session.user?.email}</div>
               </div>
-              <Link href="/account" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Your account</Link>
+              <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Mon profil</Link>
               <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Your orders</Link>
               <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Returns & Orders</Link>
               {session.user?.role === 'Admin' && (

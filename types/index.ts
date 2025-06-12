@@ -65,3 +65,33 @@ export interface IAppointment {
   createdAt: string;
   updatedAt: string;
 }
+
+// Add explicit interface for schema compatibility
+export interface IUserInputExtra {
+  phone?: string;
+  bio?: string;
+  company?: string;
+  companyLogo?: string;
+  profileImage?: string;
+  matriculeFiscale?: string;
+  website?: string;
+  socialMedia?: string;
+}
+
+export interface IUserInputExtra {
+  name?: string;
+  email?: string;
+  profileImage?: string;
+  companyLogo?: string;
+  phone?: string;
+  whatsapp?: string;
+  bio?: string;
+  company?: string;
+  address?: string;
+  matriculeFiscale?: string;
+  website?: string;
+  socialMedia?: string;
+  emailVerified?: boolean;
+  role?: string;
+  password?: string;
+}

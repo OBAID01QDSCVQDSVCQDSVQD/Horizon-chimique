@@ -117,12 +117,16 @@ const UserRole = z.string().min(1, 'role is required')
 export const UserInputSchema = z.object({
   name: UserName,
   email: Email,
-  image: z.string().optional(),
+  profileImage: z.string().optional(),
+  companyLogo: z.string().optional(),
   emailVerified: z.boolean(),
   role: UserRole,
   password: Password,
   whatsapp: z.string().min(8, 'WhatsApp number is required').regex(/^(\+|0)[0-9]{8,}$/,'Invalid WhatsApp number'),
   paymentMethod: z.string().min(1, 'Payment method is required'),
+  phone: z.string().optional(),
+  bio: z.string().optional(),
+  company: z.string().optional(),
   address: z.object({
     fullName: z.string().min(1, 'Full name is required'),
     street: z.string().min(1, 'Street is required'),
@@ -132,6 +136,9 @@ export const UserInputSchema = z.object({
     country: z.string().min(1, 'Country is required'),
     phone: z.string().min(1, 'Phone number is required'),
   }),
+  matriculeFiscale: z.string().optional(),
+  website: z.string().optional(),
+  socialMedia: z.string().optional(),
 })
 
 export const UserSignInSchema = z.object({
