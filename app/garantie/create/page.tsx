@@ -20,11 +20,11 @@ export default function GarantiePage() {
     montant: '',
   })
   const surfaceOptions = [
-    'toit m2',
-    'toit ml',
-    'acrotère ml',
-    'Mur m2',
-    'Surface m2',
+    'toit en m2',
+    'toit en ml',
+    'acrotère enml',
+    'Mur en m2',
+    'Surface en m2',
   ];
   const [selectedSurfaces, setSelectedSurfaces] = useState<string[]>([]);
   const [surfaceValues, setSurfaceValues] = useState<{ [key: string]: string }>({});
