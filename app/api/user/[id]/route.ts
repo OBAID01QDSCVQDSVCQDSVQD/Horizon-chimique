@@ -1,14 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import User from '@/lib/db/models/user.model';
 
+type Props = {
+  params: Promise<{ id: string }>
+}
+
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  props: Props
 ) {
   try {
     await connectToDatabase();
-    const user = await User.findById(params.id).lean();
+    const { id } = await props.params;
+    const user = await User.findById(id).lean();
     if (!user) {
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
     }
