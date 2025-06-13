@@ -465,10 +465,21 @@ export async function GET(
     page.drawText(`Tél: ${user?.phone || ''}`, { x: 400, y: 15, size: 10, font, color: rgb(1,1,1) });
 
     const pdfBytes = await pdfDoc.save();
+
+    // تنظيف اسم المستفيد ليكون صالحاً كاسم ملف
+    const cleanName = (garantie.name || 'sans-nom')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-') // استبدال كل الرموز غير المسموح بها بشرطة
+      .replace(/-+/g, '-')        // استبدال الشرطات المتتالية بشرطة واحدة
+      .replace(/^-|-$/g, '');     // إزالة الشرطات من البداية والنهاية
+
+    // إنشاء اسم الملف بدون الـ id
+    const fileName = `garantie-${cleanName}.pdf`;
+
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename=\"garantie-${id}.pdf\"`,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
       },
     });
   } catch (error) {
