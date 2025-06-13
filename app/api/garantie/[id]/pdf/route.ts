@@ -20,6 +20,7 @@ type GarantieType = {
   montant?: number;
   installDate?: string;
   duration?: number;
+  
   notes?: string;
   maintenances?: Array<{ date: string }>;
   status: 'APPROVED' | 'NOT_APPROVED';
@@ -96,21 +97,29 @@ export async function GET(
     let logoImage = undefined;
     try {
       if (user?.companyLogo?.startsWith('http')) {
-        // تحميل الصورة من URL خارجي
         const response = await fetch(user.companyLogo);
         const logoBytes = Buffer.from(await response.arrayBuffer());
-        // اختر embedPng أو embedJpg حسب نوع الصورة (هنا Cloudinary غالبًا JPG)
-        logoImage = await pdfDoc.embedJpg(logoBytes);
+        // جرب PNG أولاً ثم JPG إذا فشل
+        try {
+          logoImage = await pdfDoc.embedPng(logoBytes);
+        } catch {
+          logoImage = await pdfDoc.embedJpg(logoBytes);
+        }
       } else if (user?.companyLogo?.startsWith('data:image')) {
-        // Base64
         const base64Data = user.companyLogo.split(',')[1];
-        const logoBytes = Buffer.from(base64Data, 'base64');
-        logoImage = await pdfDoc.embedPng(logoBytes);
+        if (user.companyLogo.startsWith('data:image/png')) {
+          logoImage = await pdfDoc.embedPng(Buffer.from(base64Data, 'base64'));
+        } else {
+          logoImage = await pdfDoc.embedJpg(Buffer.from(base64Data, 'base64'));
+        }
       } else if (user?.companyLogo) {
-        // مسار محلي نسبي
         const logoPath = path.join(process.cwd(), 'public', user.companyLogo.replace(/^\/+/, ''));
         const logoBytes = await fs.readFile(logoPath);
-        logoImage = await pdfDoc.embedPng(logoBytes);
+        try {
+          logoImage = await pdfDoc.embedPng(logoBytes);
+        } catch {
+          logoImage = await pdfDoc.embedJpg(logoBytes);
+        }
       }
     } catch (e) {
       console.error('Logo error:', e);
@@ -127,11 +136,12 @@ export async function GET(
       }
     }
 
+    // رسم اللوجو في الهيدر (يمين وبحجم كبير)
     if (logoImage) {
-      const logoWidth = 90;
+      const logoWidth = 120; // حجم كبير
       const logoHeight = (logoImage.height / logoImage.width) * logoWidth;
       page.drawImage(logoImage, {
-        x: 595 - logoWidth - 40,
+        x: 595 - logoWidth - 40, // 40px هامش من اليمين
         y: 842 - headerHeight + (headerHeight - logoHeight) / 2,
         width: logoWidth,
         height: logoHeight,
