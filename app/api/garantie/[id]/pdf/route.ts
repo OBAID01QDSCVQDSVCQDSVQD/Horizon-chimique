@@ -205,22 +205,35 @@ export async function GET(
       [`Durée de garantie:`, `10 ans (13/06/2025 - 13/06/2035)`],
     ];
 
-    // دالة تقسيم النص
+    // تعديل دالة wrapText لتكون أكثر أماناً
     function wrapText(text: string | undefined | null, maxWidth: number, font: any, fontSize: number) {
       if (!text) return [''];
+      if (!font || typeof font.widthOfTextAtSize !== 'function') {
+        console.error('Invalid font object:', font);
+        return [String(text)];
+      }
+      
       const words = String(text).split(' ');
       let lines: string[] = [];
       let currentLine = '';
+      
       words.forEach(word => {
         const testLine = currentLine ? currentLine + ' ' + word : word;
-        const width = font.widthOfTextAtSize(testLine, fontSize);
-        if (width > maxWidth && currentLine) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
+        try {
+          const width = font.widthOfTextAtSize(testLine, fontSize);
+          if (width > maxWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        } catch (error) {
+          console.error('Error calculating text width:', error);
+          lines.push(testLine);
+          currentLine = '';
         }
       });
+      
       if (currentLine) lines.push(currentLine);
       return lines;
     }
@@ -387,55 +400,63 @@ export async function GET(
 
     // --- Box 3: Avantage exclusif ---
     const advantageTitle = 'Avantage exclusif';
-    const advantageText = `Le bénéficiaire obtiendra une réduction exceptionnelle de 20 % sur la première opération de maintenance des produits installés.`;
-    const advantageLines = [advantageText];
-    const advantageBoxLineHeight = 16;
-    const advantageBoxPadding = 16;
-    const advantageBoxHeight = advantageLines.length * advantageBoxLineHeight + advantageBoxPadding * 2 + 10;
+    const advantageText = garantie.notes || '';
 
-    // ظل خفيف
-    page.drawRectangle({
-      x: 34,
-      y: currentY - advantageBoxHeight - 4,
-      width: 535,
-      height: advantageBoxHeight,
-      color: rgb(0.85, 0.95, 0.85),
-      opacity: 0.4
-    });
+    // تحقق من وجود نص
+    if (advantageText.trim()) {  // تحقق من أن النص ليس فارغاً أو يحتوي على مسافات فقط
+      const advantageLines = advantageText.split('\n');
+      const advantageWrapped = advantageLines.flatMap(line => 
+        wrapText(line, 470, font, 12)
+      );
 
-    // الكادر الرئيسي بدون بوردر
-    page.drawRectangle({
-      x: 30,
-      y: currentY - advantageBoxHeight,
-      width: 535,
-      height: advantageBoxHeight,
-      color: lightGreen
-    });
+      const advantageBoxLineHeight = 16;
+      const advantageBoxPadding = 16;
+      const advantageBoxHeight = advantageWrapped.length * advantageBoxLineHeight + advantageBoxPadding * 2 + 10;
 
-    // عنوان القسم
-    page.drawText(advantageTitle, {
-      x: labelStartX,
-      y: currentY - 20,
-      size: 14,
-      font: fontBold,
-      color: green
-    });
-
-    // التفاف النص داخل الكادر
-    const advantageTextFull = advantageLines.join(' ');
-    const advantageWrapped = wrapText(advantageTextFull, 470, font, 12);
-
-    let yAdv = currentY - 40;
-    advantageWrapped.forEach((line) => {
-      page.drawText(line, {
-        x: labelStartX,
-        y: yAdv,
-        size: 12,
-        font,
-        color: rgb(0,0,0)
+      // ظل خفيف
+      page.drawRectangle({
+        x: 34,
+        y: currentY - advantageBoxHeight - 4,
+        width: 535,
+        height: advantageBoxHeight,
+        color: rgb(0.85, 0.95, 0.85),
+        opacity: 0.4
       });
-      yAdv -= advantageBoxLineHeight;
-    });
+
+      // الكادر الرئيسي بدون بوردر
+      page.drawRectangle({
+        x: 30,
+        y: currentY - advantageBoxHeight,
+        width: 535,
+        height: advantageBoxHeight,
+        color: lightGreen
+      });
+
+      // عنوان القسم
+      page.drawText(advantageTitle, {
+        x: labelStartX,
+        y: currentY - 20,
+        size: 14,
+        font: fontBold,
+        color: green
+      });
+
+      // رسم النص
+      let textY = currentY - 40;
+      advantageWrapped.forEach((line) => {
+        page.drawText(line, {
+          x: labelStartX,
+          y: textY,
+          size: 12,
+          font: font,
+          color: rgb(0, 0, 0)
+        });
+        textY -= advantageBoxLineHeight;
+      });
+
+      // تحديث currentY فقط إذا تم إضافة الكارت
+      currentY -= advantageBoxHeight + 20;
+    }
 
     // --- Footer ---
     page.drawRectangle({ x: 0, y: 0, width: 595, height: 40, color: blue });
