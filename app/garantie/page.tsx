@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
+import { FaSearch } from 'react-icons/fa'
 
 interface Garantie {
   _id: string
@@ -9,7 +10,7 @@ interface Garantie {
   name: string
   phone: string
   address: string
-  surface: string
+  surface: any
   surfaceValue: number
   montant: number
   installDate: string
@@ -18,12 +19,14 @@ interface Garantie {
   maintenances?: { date: string }[]
   status: string
   createdAt: string
+  userId?: string
 }
 
 export default function GarantieIndex() {
   const { data: session, status } = useSession()
   const [garanties, setGaranties] = useState<Garantie[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchPhone, setSearchPhone] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -31,21 +34,30 @@ export default function GarantieIndex() {
       setLoading(false);
       return;
     }
-    async function fetchGaranties() {
-      setLoading(true)
-      const res = await fetch('/api/garanties')
+    fetchGaranties();
+  }, [session, status])
+
+  async function fetchGaranties(phone?: string) {
+    setLoading(true)
+    try {
+      const query = phone ? { phone } : {};
+      const url = `/api/garanties?${new URLSearchParams(query as Record<string, string>)}`
+      const res = await fetch(url)
       const data = await res.json()
       if (res.ok && Array.isArray(data.garanties)) {
-        if (session?.user?.role === 'ADMIN') {
-          setGaranties(data.garanties)
-        } else {
-          setGaranties(data.garanties.filter((g: any) => g.userId === session?.user?.id))
-        }
+        setGaranties(data.garanties);
       }
+    } catch (error) {
+      console.error('Erreur lors du chargement des garanties:', error);
+    } finally {
       setLoading(false)
     }
-    fetchGaranties()
-  }, [session, status])
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchGaranties(searchPhone);
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -61,10 +73,56 @@ export default function GarantieIndex() {
             </Link>
           )}
         </div>
+
+        {/* Formulaire de recherche */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-4 mb-6">
+          <form onSubmit={handleSearch}>
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <div className="flex-1 w-full">
+                <label htmlFor="phoneSearch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Rechercher par numéro de téléphone
+                </label>
+                <div className="relative">
+                  <input
+                    id="phoneSearch"
+                    type="text"
+                    value={searchPhone}
+                    onChange={(e) => setSearchPhone(e.target.value)}
+                    placeholder="Entrez le numéro de téléphone..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                  />
+                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-2"
+                >
+                  <FaSearch />
+                  Rechercher
+                </button>
+                {searchPhone && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchPhone('');
+                      fetchGaranties();
+                    }}
+                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
+        </div>
+
         {status === 'loading' || loading ? (
           <div className="text-center text-gray-500">Chargement...</div>
         ) : garanties.length === 0 ? (
-          <div className="text-center text-gray-400">Vous n'êtes pas encore l'un de nos clients.</div>
+          <div className="text-center text-gray-400">Aucune garantie trouvée.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {garanties.map(g => (
@@ -86,20 +144,30 @@ export default function GarantieIndex() {
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${g.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{g.status === 'APPROVED' ? 'Approuvée' : 'En attente'}</span>
                   </div>
                 </div>
-                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Client:</b> {g.name}</div>
-                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Adresse:</b> {g.address}</div>
-                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Surface:</b> {g.surface && Array.isArray(g.surface) && g.surface.length > 0
-                  ? g.surface.map(s => `${s.type}: ${s.value}`).join(', ')
-                  : '-'}</div>
-                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Date d'installation:</b> {g.installDate.split('-').reverse().join('/')}</div>
-                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Montant:</b> {g.montant} DT</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Créée le: {g.createdAt?.slice(0,10).split('-').reverse().join('/')}</div>
+                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Client :</b> {g.name}</div>
+                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Adresse :</b> {g.address}</div>
+                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                  <b>Surface :</b>{" "}
+                  {Array.isArray(g.surface) && g.surface.length > 0
+                    ? g.surface
+                        .map((s: any) => {
+                          if (s.type && s.value) return `${s.type}: ${s.value}`;
+                          if (s.type) return s.type;
+                          if (s.value) return `${s.value}`;
+                          return '';
+                        })
+                        .filter(Boolean)
+                        .join(', ')
+                    : '-'}
+                </div>
+                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Date d'installation :</b> {g.installDate?.split('-').reverse().join('/')}</div>
+                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Montant :</b> {g.montant} DT</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Créée le : {g.createdAt?.slice(0,10).split('-').reverse().join('/')}</div>
               </div>
             ))}
           </div>
         )}
       </div>
-      {/* ضع الفوتر هنا إذا لم يكن في layout العام */}
     </div>
   )
 } 

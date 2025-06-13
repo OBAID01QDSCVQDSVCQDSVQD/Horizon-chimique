@@ -14,20 +14,28 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr" className="rtl-enabled">
-      <body>
+    <html lang="fr" className="w-full overflow-x-hidden">
+      <body className="w-full min-h-screen flex flex-col">
         <SessionProvider>
-        <TopHeader />
-        <Header />
-       
-        
-        <SessionProvider>
-          {children}
-        </SessionProvider>
-          
-        <Footer />
+          <TopHeader />
+          <Header />
+          <main className="flex-1 w-full">
+            {children}
+          </main>
+          <Footer />
         </SessionProvider>
       </body>
     </html>
   )
+}
+
+export function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen flex flex-col w-full">
+      <main className="flex-1 w-full">
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
 }

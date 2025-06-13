@@ -54,10 +54,9 @@ export default function AdminLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-950">
-      {/* Mobile Menu Button */}
       <main className="flex flex-row flex-1">
-        {/* Sidebar (inside body only) */}
-        <div className="relative">
+        {/* Sidebar */}
+        <div className="relative w-40">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="fixed top-35 left-4 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 text-white shadow-lg md:hidden focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
@@ -65,11 +64,9 @@ export default function AdminLayout({
           >
             {isSidebarOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
           </button>
-          {/* Sidebar Panel */}
           <div className={`absolute inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition duration-200 ease-in-out z-10 w-64 bg-white dark:bg-gray-900 shadow-lg
             ${isSidebarOpen ? 'fixed left-0 h-screen z-50 overflow-y-auto mt-33 md:relative md:h-auto md:overflow-visible' : ''}
           `}>
-            {/* Close button inside sidebar, only on mobile */}
             <button
               onClick={() => setIsSidebarOpen(false)}
               className="absolute top-4 right-4 z-50 p-2 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow md:hidden"
@@ -100,7 +97,6 @@ export default function AdminLayout({
               })}
             </nav>
           </div>
-          {/* Overlay only inside body */}
           {isSidebarOpen && (
             <div
               className="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm z-0 md:hidden"
@@ -109,9 +105,12 @@ export default function AdminLayout({
           )}
         </div>
         {/* Main Content */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto flex justify-center pl-0 ">
+        <div className="scale-[0.85] origin-top w-full">
           {children}
         </div>
+        </div>
+        
       </main>
     </div>
   )
