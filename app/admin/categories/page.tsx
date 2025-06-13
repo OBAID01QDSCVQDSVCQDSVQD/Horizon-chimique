@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
 
 interface Category {
   _id: string;
@@ -137,8 +138,10 @@ export default function AdminCategoriesPage() {
       if (!res.ok) throw new Error('فشل في حفظ التصنيف');
       closeModal();
       fetchCategories();
+      toast.success('Catégorie ajoutée avec succès');
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'فشل في حفظ التصنيف');
+      toast.error("Erreur lors de l'ajout de la catégorie");
     }
   };
 
@@ -157,8 +160,10 @@ export default function AdminCategoriesPage() {
       if (!res.ok) throw new Error('فشل في حذف التصنيف');
       closeDeleteModal();
       fetchCategories();
+      toast.success('Catégorie supprimée');
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : 'فشل في حذف التصنيف');
+      toast.error("Erreur lors de la suppression de la catégorie");
     }
   };
 

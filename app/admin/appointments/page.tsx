@@ -49,7 +49,7 @@ export default function AllAppointmentsPage() {
       setFilteredAppointments(data.appointments);
     } catch (error) {
       console.error('Error fetching appointments:', error);
-      toast.error('Failed to load appointments');
+      toast.error('Erreur lors du chargement des rendez-vous');
     } finally {
       setLoading(false);
     }
@@ -71,10 +71,10 @@ export default function AllAppointmentsPage() {
       setFilteredAppointments(filteredAppointments.map(appointment => 
         appointment._id === appointmentId ? { ...appointment, status: newStatus } : appointment
       ));
-      toast.success('Appointment status updated successfully');
+      toast.success('Statut du rendez-vous mis à jour');
     } catch (error) {
       console.error('Error updating appointment status:', error);
-      toast.error('Failed to update appointment status');
+      toast.error('Erreur lors de la mise à jour du statut du rendez-vous');
     }
   };
 

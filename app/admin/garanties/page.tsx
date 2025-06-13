@@ -116,20 +116,29 @@ export default function AdminGarantiesPage() {
     setShowEditModal(true);
   };
 
-  const handleEditSave = async () => {
+  const handleUpdate = async () => {
     if (!editData?._id) return;
+    
     try {
-      const res = await fetch(`/api/garanties/${editData._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch(`/api/garanties/${editData._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(editData),
       });
-      if (!res.ok) throw new Error("Erreur lors de la modification");
-      setGaranties(gs => gs.map(g => g._id === editData._id ? { ...g, ...editData } : g));
-      toast.success("Garantie modifiée");
+
+      if (!response.ok) {
+        throw new Error('Failed to update warranty');
+      }
+
+      const updatedGarantie = await response.json();
+      setGaranties(garanties.map(g => g._id === updatedGarantie._id ? updatedGarantie : g));
       setShowEditModal(false);
-    } catch (e) {
-      toast.error("Erreur lors de la modification");
+      toast.success('Garantie mise à jour avec succès');
+    } catch (error) {
+      console.error('Error updating warranty:', error);
+      toast.error('Erreur lors de la mise à jour de la garantie');
     }
   };
 
@@ -144,8 +153,8 @@ export default function AdminGarantiesPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-<div className="w-full p-4 pl-5 flex-1">
-          <div className="flex justify-between items-center mb-6">
+      <div className="w-full p-4 pl-5 flex-1">
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-blue-700">Mes garanties</h1>
           {['APPLICATEUR', 'ADMIN'].includes(session?.user?.role ?? '') && (
             <Link
@@ -281,8 +290,21 @@ export default function AdminGarantiesPage() {
                     <td className="py-2 px-4">{g.name}</td>
                     <td className="py-2 px-4">{g.phone}</td>
                     <td className="py-2 px-4">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${g.status === "APPROVED" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                        {g.status === "APPROVED" ? "Approuvée" : "En attente"}
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-semibold
+                          ${g.status === "APPROVED"
+                            ? "bg-green-100 text-green-700"
+                            : g.status === "REJECTED"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                          }`
+                        }
+                      >
+                        {g.status === "APPROVED"
+                          ? "Approuvée"
+                          : g.status === "REJECTED"
+                          ? "Rejetée"
+                          : "En attente"}
                       </span>
                     </td>
                     <td className="py-2 px-4">{g.installDate?.split('-').reverse().join('/')}</td>
@@ -370,7 +392,8 @@ export default function AdminGarantiesPage() {
                       disabled={statusLoading}
                     >
                       <option value="APPROVED">Approuvée</option>
-                      <option value="NOT_APPROVED">En attente</option>
+                      <option value="PENDING">En attente</option>
+                      <option value="REJECTED">Rejetée</option>
                     </select>
                   </div>
                 </div>
@@ -467,18 +490,19 @@ export default function AdminGarantiesPage() {
                     <div>
                       <label className="font-semibold text-gray-700 mr-2">Statut:</label>
                       <select
-                        className="border rounded px-2 py-1"
                         value={editData.status || ''}
                         onChange={e => setEditData({ ...editData, status: e.target.value })}
+                        className="w-full p-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
                       >
-                        <option value="APPROVED">Approuvée</option>
-                        <option value="NOT_APPROVED">En attente</option>
+                        <option value="PENDING">En attente</option>
+                        <option value="APPROVED">Approuvé</option>
+                        <option value="REJECTED">Rejeté</option>
                       </select>
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 mt-4">
                     <button onClick={() => setShowEditModal(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Annuler</button>
-                    <button onClick={handleEditSave} className="px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700">Enregistrer</button>
+                    <button onClick={handleUpdate} className="px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700">Enregistrer</button>
                   </div>
                 </div>
               </div>

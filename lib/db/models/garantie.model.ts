@@ -21,7 +21,7 @@ const GarantieSchema = new Schema({
   duration: { type: Number },
   notes: { type: String },
   maintenances: [MaintenancePeriodSchema],
-  status: { type: String, enum: ['APPROVED', 'NOT_APPROVED'], default: 'NOT_APPROVED', required: true },
+  status: { type: String, enum: ['APPROVED', 'PENDING', 'REJECTED'], default: 'PENDING', required: true },
 }, { timestamps: true })
 
 const Garantie = models.Garantie || model('Garantie', GarantieSchema)

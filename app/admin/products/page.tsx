@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiEdit2, FiTrash2, FiPlus, FiX, FiEye, FiFilter, FiImage } from 'react-icons/fi'
-import { toast } from 'react-hot-toast'
 import React from 'react'
 import TiptapEditor from '@/components/TiptapEditor'
+import { toast } from 'react-hot-toast'
 
 
 interface Product {

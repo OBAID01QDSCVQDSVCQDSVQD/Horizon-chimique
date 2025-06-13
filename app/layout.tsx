@@ -1,9 +1,9 @@
 'use client'
+import { SessionProvider } from 'next-auth/react'
 import TopHeader from '@/components/shared/header/header1'
 import Header from '@/components/shared/header'
 import Footer from '@/components/shared/footer'
 import '@/app/globals.css'
-import { SessionProvider } from "next-auth/react"
 import { signIn } from 'next-auth/react'
 
 import ClientProviders from '@/components/shared/client-providers'
@@ -15,14 +15,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" className="w-full overflow-x-hidden">
-      <body className="w-full min-h-screen flex flex-col">
+      <body className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <SessionProvider>
-        <TopHeader />
-        <Header />
+          <TopHeader />
+          <Header />
           <main className="flex-1 w-full">
-          {children}
+            {children}
           </main>
-        <Footer />
+          <Footer />
         </SessionProvider>
       </body>
     </html>

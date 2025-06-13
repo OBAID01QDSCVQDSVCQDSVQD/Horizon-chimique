@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { FaSearch } from 'react-icons/fa'
+import { FiDownload } from 'react-icons/fi'
+import { toast } from 'react-hot-toast'
 
 interface Garantie {
   _id: string
@@ -27,6 +29,7 @@ export default function GarantieIndex() {
   const [garanties, setGaranties] = useState<Garantie[]>([])
   const [loading, setLoading] = useState(true)
   const [searchPhone, setSearchPhone] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -57,6 +60,26 @@ export default function GarantieIndex() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     fetchGaranties(searchPhone);
+  };
+
+  const handleDownloadPDF = async (garantie: Garantie) => {
+    try {
+      const response = await fetch(`/api/garantie/${garantie._id}/pdf`);
+      if (!response.ok) throw new Error('Failed to download PDF');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `garantie-${garantie._id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Erreur lors du téléchargement du PDF');
+    }
   };
 
   return (
@@ -130,18 +153,22 @@ export default function GarantieIndex() {
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-bold text-blue-800 text-lg">{g.company}</span>
                   <div className="flex items-center gap-2">
-                    <a
-                      href={`/api/garantie/${g._id}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      PDF
-                    </a>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${g.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{g.status === 'APPROVED' ? 'Approuvée' : 'En attente'}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      g.status === 'APPROVED' 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                    }`}>
+                      {g.status === 'APPROVED' ? 'Approuvé' : 'En attente'}
+                    </span>
+                    {g.status === 'APPROVED' && (
+                      <button
+                        onClick={() => handleDownloadPDF(g)}
+                        className="p-1 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                        title="Télécharger le PDF"
+                      >
+                        <FiDownload className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Client :</b> {g.name}</div>

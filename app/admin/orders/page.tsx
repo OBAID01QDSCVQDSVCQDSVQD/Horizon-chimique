@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import { toast } from 'react-hot-toast';
 
 interface Order {
   _id: string;
@@ -82,6 +82,7 @@ export default function AdminOrdersPage() {
       setOrders(data.orders || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      toast.error('Erreur lors du chargement des commandes');
       setOrders([]);
     } finally {
       setLoading(false);
@@ -123,11 +124,9 @@ export default function AdminOrdersPage() {
     setFilteredOrders(result);
   };
 
-  const handleStatusChange = async (newStatus: string) => {
-    if (!selectedOrder) return;
-    const prevStatus = selectedOrder.status;
+  const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/admin/orders?orderId=${selectedOrder._id}`, {
+      const res = await fetch(`/api/admin/orders?orderId=${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -137,12 +136,10 @@ export default function AdminOrdersPage() {
         throw new Error(errorData.error || 'Erreur lors de la mise à jour du statut');
       }
       const data = await res.json();
-      setSelectedOrder({ ...selectedOrder, status: newStatus });
-      setOrders(orders => orders.map(o => o._id === selectedOrder._id ? { ...o, status: newStatus } : o));
-      toast.success('Statut mis à jour avec succès');
+      setOrders(orders => orders.map(o => o._id === id ? { ...o, status: newStatus } : o));
+      toast.success('Statut de la commande mis à jour');
     } catch (error: any) {
-      setSelectedOrder({ ...selectedOrder, status: prevStatus });
-      toast.error(error.message || 'Erreur lors de la mise à jour du statut');
+      toast.error('Erreur lors de la mise à jour du statut de la commande');
     }
   };
 
@@ -438,7 +435,7 @@ export default function AdminOrdersPage() {
                   <div className="text-xs text-blue-500">Statut</div>
                   <select
                     value={selectedOrder.status}
-                    onChange={e => handleStatusChange(e.target.value)}
+                    onChange={e => handleStatusChange(selectedOrder._id, e.target.value)}
                     className={`px-2 py-1 rounded text-xs font-bold border w-full ${statusColors[selectedOrder.status] || 'bg-gray-200 text-gray-800'}`}
                   >
                     {statusOptions.filter(opt => opt.value).map(opt => (
