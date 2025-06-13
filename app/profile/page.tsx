@@ -46,15 +46,15 @@ export default function ProfilePage() {
   // Cloudinary upload function
   const uploadToCloudinary = async (file: File) => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+    const formData = new FormData();
+    formData.append('file', file);
       formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
       
       const res = await fetch(
         `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
         {
-          method: 'POST',
-          body: formData,
+      method: 'POST',
+      body: formData,
         }
       );
       
@@ -62,8 +62,8 @@ export default function ProfilePage() {
         throw new Error('Failed to upload image');
       }
       
-      const data = await res.json();
-      return data.secure_url;
+    const data = await res.json();
+    return data.secure_url;
     } catch (error) {
       console.error('Error uploading to Cloudinary:', error);
       throw error;
@@ -76,9 +76,9 @@ export default function ProfilePage() {
     if (file) {
       try {
         setLoading(true);
-        const url = await uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file);
         setImagePreview(url);
-        setForm(f => ({ ...f, profileImage: url }));
+      setForm(f => ({ ...f, profileImage: url }));
       } catch (error) {
         console.error('Error uploading profile image:', error);
         alert("Erreur lors du téléchargement de l'image de profil");
@@ -94,8 +94,8 @@ export default function ProfilePage() {
     if (file) {
       try {
         setLoading(true);
-        const url = await uploadToCloudinary(file);
-        setForm(f => ({ ...f, companyLogo: url }));
+      const url = await uploadToCloudinary(file);
+      setForm(f => ({ ...f, companyLogo: url }));
       } catch (error) {
         console.error('Error uploading company logo:', error);
         alert("Erreur lors du téléchargement du logo de la société");
@@ -198,9 +198,9 @@ export default function ProfilePage() {
               <div className="flex flex-col items-center gap-2 mt-4 p-4 bg-gray-50 rounded-xl w-full">
                 <div className="flex items-center gap-3">
                   {userData?.companyLogo ? (
-                    <img
-                      src={userData.companyLogo}
-                      alt="Logo société"
+                <img
+                  src={userData.companyLogo}
+                  alt="Logo société"
                       className="w-16 h-16 rounded-lg bg-white border shadow p-1"
                       style={{ objectFit: 'contain' }}
                     />
@@ -295,8 +295,8 @@ export default function ProfilePage() {
                   />
                   <label htmlFor="profileImageInput" className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 cursor-pointer shadow hover:bg-blue-700 transition">
                     <FaEdit size={16} />
-                    <input id="profileImageInput" type="file" accept="image/*" onChange={handleProfileImageChange} className="hidden" />
-                  </label>
+                      <input id="profileImageInput" type="file" accept="image/*" onChange={handleProfileImageChange} className="hidden" />
+                    </label>
                 </div>
                 <span className="text-sm text-gray-500">Photo de profil</span>
               </div>
@@ -312,11 +312,11 @@ export default function ProfilePage() {
                     />
                   ) : (
                     <span className="text-gray-400 text-2xl">{form.company?.charAt(0) || '?'}</span>
-                  )}
+                    )}
                   <label htmlFor="companyLogoInput" className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 cursor-pointer shadow hover:bg-blue-700 transition">
                     <FaEdit size={16} />
-                    <input id="companyLogoInput" type="file" accept="image/*" onChange={handleCompanyLogoChange} className="hidden" />
-                  </label>
+                      <input id="companyLogoInput" type="file" accept="image/*" onChange={handleCompanyLogoChange} className="hidden" />
+                    </label>
                 </div>
                 <span className="text-sm text-gray-500">Logo de la société</span>
               </div>
@@ -371,10 +371,10 @@ export default function ProfilePage() {
                 disabled={loading}
                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <FaSave />
-                {loading ? "Enregistrement..." : "Enregistrer"}
-              </button>
-            </form>
+                  <FaSave />
+                  {loading ? "Enregistrement..." : "Enregistrer"}
+                </button>
+              </form>
           </div>
         </div>
       )}

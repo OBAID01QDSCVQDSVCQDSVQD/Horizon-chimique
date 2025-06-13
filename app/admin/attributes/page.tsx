@@ -68,7 +68,7 @@ export default function AdminAttributesPage() {
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         {loading ? (
           <div className="flex justify-center items-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-400"></div>
             <span className="ml-3">Chargement en cours...</span>
           </div>
         ) : attributes.length === 0 ? (

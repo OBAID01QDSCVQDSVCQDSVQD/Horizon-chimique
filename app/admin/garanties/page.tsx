@@ -133,6 +133,15 @@ export default function AdminGarantiesPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-400"></div>
+        <span className="ml-3">Chargement en cours...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
 <div className="w-full p-4 pl-5 flex-1">

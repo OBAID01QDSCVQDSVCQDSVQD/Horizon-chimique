@@ -17,12 +17,12 @@ export default function RootLayout({
     <html lang="fr" className="w-full overflow-x-hidden">
       <body className="w-full min-h-screen flex flex-col">
         <SessionProvider>
-          <TopHeader />
-          <Header />
+        <TopHeader />
+        <Header />
           <main className="flex-1 w-full">
-            {children}
+          {children}
           </main>
-          <Footer />
+        <Footer />
         </SessionProvider>
       </body>
     </html>

@@ -437,14 +437,19 @@ export default function AdminProductsPage() {
   });
 
   if (loading) {
-    return <div className="flex justify-center items-center h-32">Chargement en cours... </div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-400"></div>
+        <span className="ml-3 text-lg">Chargement en cours...</span>
+      </div>
+    );
   }
   if (products.length === 0) {
     return <div className="text-center text-gray-500">Aucun produit disponible</div>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="p-6 max-w-7xl mx-auto bg-gray-100 dark:bg-gray-950 min-h-screen">
       <h1 className="text-2xl font-bold mb-8 text-primary dark:text-yellow-400">Gestion des produits</h1>
       {/* قسم المنتجات */}
       <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -654,7 +659,8 @@ export default function AdminProductsPage() {
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 mb-6">
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-400"></div>
+            <span className="ml-3 text-lg">Chargement en cours...</span>
           </div>
         ) : (
           <>
