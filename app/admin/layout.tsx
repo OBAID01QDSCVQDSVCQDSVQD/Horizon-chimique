@@ -1,11 +1,13 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar, FiShield, FiFileText } from 'react-icons/fi'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ErrorBoundary from '@/components/shared/ErrorBoundary'
 import { Toaster } from 'react-hot-toast'
+import { useSession } from 'next-auth/react'
+import { Loader2 } from 'lucide-react'
 
 // تعريف ثابت لقائمة لوحة التحكم
 const menuItems = [
@@ -57,7 +59,30 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { data: session, status } = useSession()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    console.log('Session status:', status);
+    console.log('Session object:', session);
+    console.log('User role:', session?.user?.role);
+
+    if (status === 'loading') return // Do nothing while loading
+
+    if (!session || session.user?.role?.toLowerCase() !== 'admin') {
+      console.log('Redirecting due to no session or non-admin role.');
+      router.push('/') // Redirect to home or login page if not admin
+    }
+  }, [session, status, router])
+
+  if (status === 'loading' || !session || session.user?.role?.toLowerCase() !== 'admin') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <ErrorBoundary>
