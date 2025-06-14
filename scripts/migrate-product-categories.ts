@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const MONGODB_URI = 'mongodb://localhost:27017/YOUR_DB_NAME'; // عدل اسم قاعدة البيانات
 

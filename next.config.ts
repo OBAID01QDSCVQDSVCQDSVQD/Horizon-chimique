@@ -4,9 +4,6 @@ const nextConfig: NextConfig = {
   images: {
     domains: ['res.cloudinary.com'],
   },
-  experimental: {
-    // (لا تضع allowedDevOrigins هنا)
-  },
   webpack: (config) => {
     config.module.rules.push({
       test: /\.json$/,

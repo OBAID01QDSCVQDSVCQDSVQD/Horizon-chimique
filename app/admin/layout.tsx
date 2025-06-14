@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar, FiShield } from 'react-icons/fi'
+import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar, FiShield, FiFileText } from 'react-icons/fi'
 import { useState } from 'react'
 import ErrorBoundary from '@/components/shared/ErrorBoundary'
 import { Toaster } from 'react-hot-toast'
@@ -43,6 +43,11 @@ const menuItems = [
     title: 'Paramètres',
     href: '/admin/settings',
     icon: FiSettings
+  },
+  {
+    title: 'Catalogues',
+    href: '/admin/catalogues',
+    icon: FiFileText
   }
 ]
 
