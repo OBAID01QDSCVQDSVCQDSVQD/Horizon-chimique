@@ -127,4 +127,30 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* أنماط أساسية للعناوين لاختبار التنسيق في Tiptap */
+}
+
+/* أنماط صريحة للعناوين داخل محتوى Tiptap المعالج بواسطة .prose */
+.prose h1 {
+  font-size: 3rem !important; /* حجم كبير جدًا لتوضيح ما إذا كان يعمل */
+  font-weight: bold !important;
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+  color: blue !important; /* لون لتوضيح أكبر */
+}
+
+.prose h2 {
+  font-size: 2.5rem !important;
+  font-weight: bold !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+  color: green !important;
+}
+
+.prose h3 {
+  font-size: 2rem !important;
+  font-weight: bold !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+  color: purple !important;
 }

@@ -26,10 +26,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, Pencil, Trash2, FileText } from 'lucide-react';
+import TiptapEditor from '@/components/TiptapEditor';
 
 interface Catalogue {
   _id: string;
@@ -139,6 +141,7 @@ export default function AdminCataloguesPage() {
   };
 
   const handleEdit = (catalogue: Catalogue) => {
+    console.log('handleEdit called with catalogue:', catalogue);
     setEditingCatalogue(catalogue);
     setFormData({
       title: catalogue.title,
@@ -206,115 +209,142 @@ export default function AdminCataloguesPage() {
                   {editingCatalogue ? 'Modifier le Catalogue' : 'Nouveau Catalogue'}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Titre</label>
+              <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="title" className="text-right">
+                    Titre
+                  </label>
                   <Input
+                    id="title"
                     value={formData.title}
                     onChange={(e) =>
                       setFormData({ ...formData, title: e.target.value })
                     }
+                    className="col-span-3"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Description</label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="shortdesc" className="block text-left mb-1">
+                    Courte Description
+                  </label>
+                  <TiptapEditor
+                    content={formData.shortdesc}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, shortdesc: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Domaine d'application</label>
-                  <Textarea
-                    value={formData.domaine}
-                    onChange={(e) =>
-                      setFormData({ ...formData, domaine: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="description" className="block text-left mb-1">
+                    Description
+                  </label>
+                  <TiptapEditor
+                    content={formData.description}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, description: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Propriétés principales</label>
-                  <Textarea
-                    value={formData.proprietes}
-                    onChange={(e) =>
-                      setFormData({ ...formData, proprietes: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="domaine" className="block text-left mb-1">
+                    Domaine
+                  </label>
+                  <TiptapEditor
+                    content={formData.domaine}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, domaine: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Préparation du support</label>
-                  <Textarea
-                    value={formData.preparation}
-                    onChange={(e) =>
-                      setFormData({ ...formData, preparation: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="proprietes" className="block text-left mb-1">
+                    Propriétés Physiques
+                  </label>
+                  <TiptapEditor
+                    content={formData.proprietes}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, proprietes: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Conditions d'application</label>
-                  <Textarea
-                    value={formData.conditions}
-                    onChange={(e) =>
-                      setFormData({ ...formData, conditions: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="preparation" className="block text-left mb-1">
+                    Préparation du support
+                  </label>
+                  <TiptapEditor
+                    content={formData.preparation}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, preparation: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Application</label>
-                  <Textarea
-                    value={formData.application}
-                    onChange={(e) =>
-                      setFormData({ ...formData, application: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="conditions" className="block text-left mb-1">
+                    Conditions d'application
+                  </label>
+                  <TiptapEditor
+                    content={formData.conditions}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, conditions: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Consommation</label>
-                  <Textarea
-                    value={formData.consommation}
-                    onChange={(e) =>
-                      setFormData({ ...formData, consommation: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="application" className="block text-left mb-1">
+                    Application
+                  </label>
+                  <TiptapEditor
+                    content={formData.application}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, application: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Nettoyage</label>
-                  <Textarea
-                    value={formData.nettoyage}
-                    onChange={(e) =>
-                      setFormData({ ...formData, nettoyage: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="consommation" className="block text-left mb-1">
+                    Consommation
+                  </label>
+                  <TiptapEditor
+                    content={formData.consommation}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, consommation: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Stockage et conditionnement</label>
-                  <Textarea
-                    value={formData.stockage}
-                    onChange={(e) =>
-                      setFormData({ ...formData, stockage: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="nettoyage" className="block text-left mb-1">
+                    Nettoyage du Matériel
+                  </label>
+                  <TiptapEditor
+                    content={formData.nettoyage}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, nettoyage: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Consignes de sécurité</label>
-                  <Textarea
-                    value={formData.consignes}
-                    onChange={(e) =>
-                      setFormData({ ...formData, consignes: e.target.value })
+                <div className="mb-4">
+                  <label htmlFor="stockage" className="block text-left mb-1">
+                    Stockage
+                  </label>
+                  <TiptapEditor
+                    content={formData.stockage}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, stockage: newContent })
                     }
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Short description</label>
-                  <Input
-                    value={formData.shortdesc}
-                    onChange={(e) => setFormData({ ...formData, shortdesc: e.target.value })}
-                    maxLength={120}
+                <div className="mb-4">
+                  <label htmlFor="consignes" className="block text-left mb-1">
+                    Consignes de sécurité
+                  </label>
+                  <TiptapEditor
+                    content={formData.consignes}
+                    onChange={(newContent) =>
+                      setFormData({ ...formData, consignes: newContent })
+                    }
                   />
                 </div>
-                <div className="flex justify-end space-x-2">
+                <DialogFooter>
                   <Button
                     type="button"
                     variant="outline"
@@ -325,7 +355,7 @@ export default function AdminCataloguesPage() {
                   <Button type="submit">
                     {editingCatalogue ? 'Mettre à jour' : 'Créer'}
                   </Button>
-                </div>
+                </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
@@ -340,7 +370,7 @@ export default function AdminCataloguesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Titre</TableHead>
-                  <TableHead>Date de création</TableHead>
+                  <TableHead>Courte Description</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -348,38 +378,36 @@ export default function AdminCataloguesPage() {
                 {catalogues.map((catalogue) => (
                   <TableRow key={catalogue._id}>
                     <TableCell>{catalogue.title}</TableCell>
+                    <TableCell>{catalogue.shortdesc}</TableCell>
                     <TableCell>
-                      {new Date(catalogue.createdAt).toLocaleDateString('fr-FR')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
+                      <div className="flex items-center gap-2">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
                           onClick={() => setViewingCatalogue(catalogue)}
                         >
-                          <FiEye className="w-4 h-4" />
+                          <FiEye className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
                           onClick={() => handleEdit(catalogue)}
                         >
-                          <Pencil className="w-4 h-4" />
+                          <FiEdit2 className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(catalogue._id)}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <FiTrash2 className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
-                          onClick={() => window.open(`/api/catalogues/${catalogue._id}/pdf`, '_blank')}
+                          onClick={() => router.push(`/api/catalogues/${catalogue._id}/pdf`)}
                         >
-                          <FileText className="w-4 h-4" />
+                          <FiDownload className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -388,67 +416,68 @@ export default function AdminCataloguesPage() {
               </TableBody>
             </Table>
           )}
-          <Dialog open={!!viewingCatalogue} onOpenChange={open => !open && setViewingCatalogue(null)}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Détails du catalogue</DialogTitle>
-              </DialogHeader>
-              {viewingCatalogue && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto bg-gray-50 rounded-lg p-4">
-                  <div className="col-span-1 md:col-span-2 border-b pb-2 mb-2">
-                    <span className="text-lg font-bold text-blue-700">{viewingCatalogue.title}</span>
-                    <div className="text-xs text-gray-400 pt-1">Créé le: {new Date(viewingCatalogue.createdAt).toLocaleDateString('fr-FR')}</div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="font-semibold text-gray-600 mb-1">Description</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.description}</div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="font-semibold text-gray-600 mb-1">Domaine d'application</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.domaine}</div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="font-semibold text-gray-600 mb-1">Propriétés principales</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.proprietes}</div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="font-semibold text-gray-600 mb-1">Préparation du support</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.preparation}</div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="font-semibold text-gray-600 mb-1">Conditions d'application</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.conditions}</div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="font-semibold text-gray-600 mb-1">Application</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.application}</div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="font-semibold text-gray-600 mb-1">Consommation</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.consommation}</div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="font-semibold text-gray-600 mb-1">Nettoyage</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.nettoyage}</div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="font-semibold text-gray-600 mb-1">Stockage et conditionnement</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.stockage}</div>
-                  </div>
-                  <div className="col-span-1 md:col-span-2">
-                    <div className="font-semibold text-gray-600 mb-1">Consignes de sécurité</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.consignes}</div>
-                  </div>
-                  <div className="col-span-1 md:col-span-2">
-                    <div className="font-semibold text-gray-600 mb-1">Short description</div>
-                    <div className="text-gray-800 bg-white rounded p-2 shadow-sm border whitespace-pre-line">{viewingCatalogue.shortdesc}</div>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
         </CardContent>
       </Card>
+
+      <Dialog open={!!viewingCatalogue} onOpenChange={() => setViewingCatalogue(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Détails du Catalogue</DialogTitle>
+          </DialogHeader>
+          {viewingCatalogue && (
+            <div className="grid gap-4">
+              <div>
+                <h3 className="font-semibold">Titre</h3>
+                <p>{viewingCatalogue.title}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Courte Description</h3>
+                <p>{viewingCatalogue.shortdesc}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Description</h3>
+                <p>{viewingCatalogue.description}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Domaine</h3>
+                <p>{viewingCatalogue.domaine}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Propriétés</h3>
+                <p>{viewingCatalogue.proprietes}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Préparation</h3>
+                <p>{viewingCatalogue.preparation}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Conditions</h3>
+                <p>{viewingCatalogue.conditions}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Application</h3>
+                <p>{viewingCatalogue.application}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Consommation</h3>
+                <p>{viewingCatalogue.consommation}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Nettoyage</h3>
+                <p>{viewingCatalogue.nettoyage}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Stockage</h3>
+                <p>{viewingCatalogue.stockage}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold">Consignes</h3>
+                <p>{viewingCatalogue.consignes}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

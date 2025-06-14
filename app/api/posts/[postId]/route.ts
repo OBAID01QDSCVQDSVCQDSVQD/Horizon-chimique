@@ -5,12 +5,15 @@ import Post from '@/lib/db/models/post.model'
 import { connectToDatabase } from '@/lib/db'
 import { NextRequest } from 'next/server'
 
+type RouteContext = {
+  params: Promise<{ postId: string }>;
+};
+
 // GET /api/posts/[postId] - الحصول على بوست محدد
-export async function GET(req: NextRequest, context: any) {
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
     await connectToDatabase()
-    const { params } = context;
-    const postId = params?.postId;
+    const { postId } = await context.params;
     
     const post = await Post.findById(postId)
       .populate({
@@ -49,7 +52,7 @@ export async function GET(req: NextRequest, context: any) {
 }
 
 // POST /api/posts/[postId] - إضافة أو إزالة إعجاب
-export async function POST(req: NextRequest, context: any) {
+export async function POST(req: NextRequest, context: RouteContext) {
   try {
     const session = await getServerSession(authConfig)
     if (!session) {
@@ -60,8 +63,7 @@ export async function POST(req: NextRequest, context: any) {
     }
 
     await connectToDatabase()
-    const { params } = context;
-    const postId = params?.postId;
+    const { postId } = await context.params;
     const post = await Post.findById(postId)
     if (!post) {
       return NextResponse.json(
@@ -91,10 +93,9 @@ export async function POST(req: NextRequest, context: any) {
 }
 
 // PUT /api/posts/[postId] - إضافة تعليق
-export async function PUT(req: NextRequest, context: any) {
+export async function PUT(req: NextRequest, context: RouteContext) {
   try {
     const session = await getServerSession(authConfig)
-    console.log('Session:', session)
     if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -103,7 +104,6 @@ export async function PUT(req: NextRequest, context: any) {
     }
 
     const { comment } = await req.json()
-    console.log('Add comment to post:', context?.params?.postId, 'Comment:', comment)
     if (!comment) {
       return NextResponse.json(
         { error: 'Comment is required' },
@@ -112,8 +112,8 @@ export async function PUT(req: NextRequest, context: any) {
     }
 
     await connectToDatabase()
-    const { params } = context;
-    const postId = params?.postId;
+    const { postId } = await context.params;
+    console.log('Add comment to post:', postId, 'Comment:', comment)
     const post = await Post.findById(postId)
     if (!post) {
       return NextResponse.json(
@@ -144,7 +144,7 @@ export async function PUT(req: NextRequest, context: any) {
 }
 
 // DELETE /api/posts/[postId] - حذف بوست
-export async function DELETE(req: NextRequest, context: any) {
+export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
     const session = await getServerSession(authConfig)
     if (!session) {
@@ -154,8 +154,7 @@ export async function DELETE(req: NextRequest, context: any) {
       )
     }
 
-    const { params } = context
-    const postId = params?.postId
+    const { postId } = await context.params;
 
     await connectToDatabase()
     const post = await Post.findById(postId)
@@ -198,74 +197,62 @@ export async function DELETE(req: NextRequest, context: any) {
   }
 }
 
-// PATCH /api/posts/[postId] - تعديل بوست
-export async function PATCH(req: NextRequest, context: any) {
+// PATCH /api/posts/[postId] - تحديث بوست جزئيا (مثلاً إضافة أو إزالة إعجاب)
+export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
-    const session = await getServerSession(authConfig)
+    const session = await getServerSession(authConfig);
     if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
-      )
+      );
     }
 
-    const { params } = context
-    const postId = params?.postId
-    const { description } = await req.json()
+    const { postId } = await context.params;
+    const body = await req.json();
+    const { comment, like } = body;
 
-    if (!description) {
-      return NextResponse.json(
-        { error: 'Description is required' },
-        { status: 400 }
-      )
-    }
-
-    await connectToDatabase()
-    const post = await Post.findById(postId)
+    await connectToDatabase();
+    const post = await Post.findById(postId);
 
     if (!post) {
       return NextResponse.json(
         { error: 'Post not found' },
         { status: 404 }
-      )
+      );
     }
 
-    // التحقق من أن المستخدم هو صاحب البوست
-    if (post.userId.toString() !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Handle comments
+    if (comment) {
+      if (!Array.isArray(post.comments)) {
+        post.comments = [];
+      }
+      post.comments.push({
+        userId: session.user.id,
+        comment,
+        createdAt: new Date(),
+      });
     }
 
-    // التحقق من الوقت (24 ساعة)
-    const postDate = new Date(post.createdAt)
-    const now = new Date()
-    const diffInHours = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60)
-    
-    if (diffInHours > 24) {
-      return NextResponse.json(
-        { error: 'Cannot edit post after 24 hours' },
-        { status: 400 }
-      )
+    // Handle likes
+    if (typeof like === 'boolean') {
+      const userId = session.user.id;
+      const hasLiked = post.likes.includes(userId);
+
+      if (like && !hasLiked) {
+        post.likes.push(userId);
+      } else if (!like && hasLiked) {
+        post.likes = post.likes.filter((id) => id !== userId);
+      }
     }
 
-    const updatedPost = await Post.findByIdAndUpdate(
-      postId,
-      { description },
-      { new: true }
-    ).populate({
-      path: 'userId',
-      select: 'name image email',
-      model: 'User'
-    })
-
-    return NextResponse.json(updatedPost)
+    await post.save();
+    return NextResponse.json(post);
   } catch (error) {
-    console.error('Error updating post:', error)
+    console.error('Error updating post:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Internal Server Error', details: (error as any)?.message },
       { status: 500 }
-    )
+    );
   }
 } 

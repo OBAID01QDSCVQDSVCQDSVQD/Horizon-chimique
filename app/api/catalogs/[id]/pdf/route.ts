@@ -188,7 +188,14 @@ export async function GET(
 // Helper function to wrap text
 function wrapText(text: string, font: any, fontSize: number, maxWidth: number) {
   if (!text) return [''];
-  const paragraphs = text.split('\n');
+  
+  // إزالة الأحرف التي لا يدعمها ترميز WinAnsi (مثل علامة الصح)
+  let sanitizedText = text.replace(/[^\x00-\x7F]/g, ' '); // إزالة الأحرف غير ASCII
+
+  // إزالة جميع علامات HTML لضمان عرض النص العادي فقط
+  sanitizedText = sanitizedText.replace(/<[^>]*>/g, '');
+
+  const paragraphs = sanitizedText.split('\n');
   let lines: string[] = [];
   for (const para of paragraphs) {
     if (!para.trim()) {

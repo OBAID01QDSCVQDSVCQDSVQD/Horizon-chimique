@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import CartSidebar from './cart-sidebar'
 import { Toaster } from 'sonner'
+import { SessionProvider } from 'next-auth/react'
 
 export default function ClientProviders({
   children,
@@ -17,16 +18,18 @@ export default function ClientProviders({
   }, [])
 
   return (
-    <>
-      {isSidebarOpen ? (
-        <div className='flex min-h-screen'>
-          <div className='flex-1 overflow-hidden'>{children}</div>
-          <CartSidebar onClose={() => setIsSidebarOpen(false)} />
-        </div>
-      ) : (
-        <div>{children}</div>
-      )}
-      <Toaster />
-    </>
+    <SessionProvider>
+      <>
+        {isSidebarOpen ? (
+          <div className='flex min-h-screen'>
+            <div className='flex-1 overflow-hidden'>{children}</div>
+            <CartSidebar onClose={() => setIsSidebarOpen(false)} />
+          </div>
+        ) : (
+          <div>{children}</div>
+        )}
+        <Toaster />
+      </>
+    </SessionProvider>
   )
 }

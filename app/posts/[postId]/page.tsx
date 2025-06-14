@@ -19,7 +19,7 @@ async function getPost(postId: string) {
 }
 
 export default async function PostPage(props: any) {
-  const { params } = props;
+  const { params } = await props;
   const session = await getServerSession(authConfig)
   const post = await getPost(params.postId)
 

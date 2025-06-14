@@ -1,157 +1,258 @@
 'use client'
 
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import TextAlign from '@tiptap/extension-text-align'
-import TextStyle from '@tiptap/extension-text-style'
-import Color from '@tiptap/extension-color'
-import { Button } from '@/components/ui/button'
-import { FiBold, FiItalic, FiList, FiAlignLeft, FiAlignCenter, FiAlignRight } from 'react-icons/fi'
-import { RawCommands } from '@tiptap/core'
-
-// ✅ تعريف TypeScript لأوامر مخصصة
-import '@tiptap/core'
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    fontSize: {
-      setFontSize: (size: string) => ReturnType
-      unsetFontSize: () => ReturnType
-    }
-  }
-}
-
-// ✅ إنشاء Extension fontSize
-const FontSize = TextStyle.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      fontSize: {
-        default: null,
-        parseHTML: element => element.style.fontSize?.replace(/['"]+/g, ''),
-        renderHTML: attributes => {
-          if (!attributes.fontSize) return {}
-          return { style: `font-size: ${attributes.fontSize}` }
-        },
-      },
-    }
-  },
-  addCommands() {
-    return {
-      setFontSize:
-        (size: string) =>
-        ({ chain }: { chain: any }) => {
-          return chain().setMark('textStyle', { fontSize: size }).run()
-        },
-      unsetFontSize:
-        () =>
-        ({ chain }: { chain: any }) => {
-          return chain().setMark('textStyle', { fontSize: null }).run()
-        },
-    } as any;
-  },
-})
+import { Heading } from '@tiptap/extension-heading'
+import { BulletList } from '@tiptap/extension-bullet-list'
+import { OrderedList } from '@tiptap/extension-ordered-list'
+import { ListItem } from '@tiptap/extension-list-item'
+import { Bold } from '@tiptap/extension-bold'
+import { Italic } from '@tiptap/extension-italic'
+import { Underline } from '@tiptap/extension-underline'
+import { Strike } from '@tiptap/extension-strike'
+import { Link } from '@tiptap/extension-link'
+import { Image } from '@tiptap/extension-image'
+import { TextStyle } from '@tiptap/extension-text-style'
+import { Color } from '@tiptap/extension-color'
+import { Document } from '@tiptap/extension-document'
+import { Paragraph } from '@tiptap/extension-paragraph'
+import { Text } from '@tiptap/extension-text'
+import { HardBreak } from '@tiptap/extension-hard-break'
+import { TextAlign } from '@tiptap/extension-text-align'
+import { FiBold, FiItalic, FiUnderline, FiType, FiLink, FiImage, FiList, FiAlignLeft, FiDroplet, FiAlignCenter, FiAlignRight, FiAlignJustify } from 'react-icons/fi'
 
 interface TiptapEditorProps {
   content: string
   onChange: (content: string) => void
+  className?: string
 }
 
-export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
+const TiptapEditor: React.FC<TiptapEditorProps> = ({ content, onChange, className }) => {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Document,
+      Paragraph,
+      Text,
+      HardBreak,
+      Bold,
+      Italic,
+      Underline,
+      Strike,
       TextStyle,
       Color,
-      FontSize,
+      Heading.configure({
+        levels: [1, 2, 3],
+      }),
+      BulletList,
+      OrderedList,
+      ListItem,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+      }),
+      Image.configure({
+        inline: true,
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
     ],
-    content,
+    content: content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
     },
+    editorProps: {
+      attributes: {
+        class: 'prose dark:prose-invert min-h-[150px] max-h-[300px] overflow-y-auto w-full p-2 border border-input rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+      },
+    },
   })
+
+  const setLink = useCallback(() => {
+    if (!editor) return
+    const previousUrl = editor.getAttributes('link').href
+    const url = window.prompt('URL', previousUrl)
+
+    // cancelled
+    if (url === null) {
+      return
+    }
+
+    // empty string was set -> unset link
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run()
+      return
+    }
+
+    // update link
+    if (url) {
+      editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+    }
+  }, [editor])
+
+  const setColor = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editor) return
+    editor.chain().focus().setColor(event.target.value).run()
+  }, [editor])
 
   if (!editor) return null
 
   return (
-    <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="flex gap-1 p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 items-center">
-        <Button
-          variant="ghost"
-          size="sm"
+    <div className={`border rounded-md border-input ${className || ''}`}>
+      <div className="flex flex-wrap items-center p-2 border-b border-input gap-1">
+        <button
+          type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+          disabled={!editor.can().chain().focus().toggleBold().run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('bold') ? 'bg-accent' : ''}`}
+          title="Gras"
         >
           <FiBold className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
+        </button>
+        <button
+          type="button"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+          disabled={!editor.can().chain().focus().toggleItalic().run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('italic') ? 'bg-accent' : ''}`}
+          title="Italique"
         >
           <FiItalic className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-gray-700' : ''}
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          disabled={!editor.can().chain().focus().toggleUnderline().run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('underline') ? 'bg-accent' : ''}`}
+          title="Souligné"
         >
-          <FiList className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          className={editor.isActive({ textAlign: 'left' }) ? 'bg-gray-200 dark:bg-gray-700' : ''}
+          <FiUnderline className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          disabled={!editor.can().chain().focus().toggleStrike().run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('strike') ? 'bg-accent' : ''}`}
+          title="Barré"
         >
-          <FiAlignLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          className={editor.isActive({ textAlign: 'center' }) ? 'bg-gray-200 dark:bg-gray-700' : ''}
-        >
-          <FiAlignCenter className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          className={editor.isActive({ textAlign: 'right' }) ? 'bg-gray-200 dark:bg-gray-700' : ''}
-        >
-          <FiAlignRight className="h-4 w-4" />
-        </Button>
-        {/* 🎨 Color Picker */}
+          <FiType className="h-4 w-4" />
+        </button>
         <input
           type="color"
+          onInput={setColor}
+          value={editor.isActive('textStyle') ? editor.getAttributes('textStyle').color : '#000000'}
+          className="h-8 w-8 cursor-pointer rounded-md overflow-hidden p-0 m-0 border-none bg-transparent"
           title="Couleur du texte"
-          className="ml-2 w-8 h-8 p-0 border-none bg-transparent cursor-pointer"
-          onChange={e => editor.chain().focus().setColor(e.target.value).run()}
         />
-        {/* 🔠 Font Size Selector */}
-        <select
-          title="Taille de police"
-          className="ml-2 rounded border-gray-300 dark:bg-gray-800 dark:text-gray-100"
-          onChange={e => (editor.chain() as any).focus().setFontSize(e.target.value).run()}
-          defaultValue=""
+        <div className="w-px h-6 bg-border mx-1" />
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('heading', { level: 1 }) ? 'bg-accent' : ''}`}
+          title="Titre 1"
         >
-          <option value="">Taille</option>
-          <option value="12px">12</option>
-          <option value="14px">14</option>
-          <option value="16px">16</option>
-          <option value="20px">20</option>
-          <option value="24px">24</option>
-          <option value="32px">32</option>
-        </select>
+          H1
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('heading', { level: 2 }) ? 'bg-accent' : ''}`}
+          title="Titre 2"
+        >
+          H2
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('heading', { level: 3 }) ? 'bg-accent' : ''}`}
+          title="Titre 3"
+        >
+          H3
+        </button>
+        <div className="w-px h-6 bg-border mx-1" />
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive({ textAlign: 'left' }) ? 'bg-accent' : ''}`}
+          title="Aligner à gauche"
+        >
+          <FiAlignLeft className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive({ textAlign: 'center' }) ? 'bg-accent' : ''}`}
+          title="Centrer"
+        >
+          <FiAlignCenter className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive({ textAlign: 'right' }) ? 'bg-accent' : ''}`}
+          title="Aligner à droite"
+        >
+          <FiAlignRight className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive({ textAlign: 'justify' }) ? 'bg-accent' : ''}`}
+          title="Justifier"
+        >
+          <FiAlignJustify className="h-4 w-4" />
+        </button>
+        <div className="w-px h-6 bg-border mx-1" />
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('bulletList') ? 'bg-accent' : ''}`}
+          title="Liste à puces"
+        >
+          <FiList className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('orderedList') ? 'bg-accent' : ''}`}
+          title="Liste numérotée"
+        >
+          <FiAlignLeft className="h-4 w-4" />
+        </button>
+        <div className="w-px h-6 bg-border mx-1" />
+        <button
+          type="button"
+          onClick={setLink}
+          className={`p-2 rounded hover:bg-accent ${editor.isActive('link') ? 'bg-accent' : ''}`}
+          title="Ajouter un lien"
+        >
+          <FiLink className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().unsetLink().run()}
+          disabled={!editor.isActive('link')}
+          className="p-2 rounded hover:bg-accent"
+          title="Supprimer le lien"
+        >
+          <FiLink className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const url = window.prompt('URL de l\'image')
+            if (url) {
+              editor.chain().focus().setImage({ src: url }).run()
+            }
+          }}
+          className="p-2 rounded hover:bg-accent"
+          title="Ajouter une image"
+        >
+          <FiImage className="h-4 w-4" />
+        </button>
       </div>
-      <EditorContent
-        editor={editor}
-        className="prose dark:prose-invert max-w-none p-4 min-h-[200px] focus:outline-none"
-      />
+      <EditorContent editor={editor} />
     </div>
   )
 }
+
+export default TiptapEditor 

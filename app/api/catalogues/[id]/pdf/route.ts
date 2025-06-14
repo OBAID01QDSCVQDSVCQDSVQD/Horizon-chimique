@@ -21,8 +21,36 @@ const WHITE = rgb(1, 1, 1);
 
 const wrapText = (text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] => {
   if (!text) return [''];
+
+  // إزالة الأحرف التي لا يدعمها ترميز WinAnsi
+  let sanitizedText = text.replace(/[^\x00-\x7F]/g, ' ');
+
+  // معالجة العناوين
+  sanitizedText = sanitizedText.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '$1\n');
+  sanitizedText = sanitizedText.replace(/<h2[^>]*>(.*?)<\/h2>/gi, '$1\n');
+  sanitizedText = sanitizedText.replace(/<h3[^>]*>(.*?)<\/h3>/gi, '$1\n');
+
+  // معالجة القوائم
+  sanitizedText = sanitizedText.replace(/<ul[^>]*>(.*?)<\/ul>/gis, (match, content) => {
+    return content.replace(/<li[^>]*>(.*?)<\/li>/gi, '• $1\n');
+  });
+  sanitizedText = sanitizedText.replace(/<ol[^>]*>(.*?)<\/ol>/gis, (match, content) => {
+    let index = 1;
+    return content.replace(/<li[^>]*>(.*?)<\/li>/gi, () => `${index++}. $1\n`);
+  });
+
+  // إزالة باقي علامات HTML
+  sanitizedText = sanitizedText.replace(/<[^>]*>/g, '');
+  
+  // معالجة الكيانات HTML
+  sanitizedText = sanitizedText.replace(/&nbsp;/g, ' ');
+  sanitizedText = sanitizedText.replace(/&amp;/g, '&');
+  sanitizedText = sanitizedText.replace(/&lt;/g, '<');
+  sanitizedText = sanitizedText.replace(/&gt;/g, '>');
+  sanitizedText = sanitizedText.replace(/&quot;/g, '"');
+  
   const lines: string[] = [];
-  const paragraphs = text.split('\n');
+  const paragraphs = sanitizedText.split('\n');
 
   for (const para of paragraphs) {
     if (para.trim() === '') {
@@ -43,7 +71,9 @@ const wrapText = (text: string, font: PDFFont, fontSize: number, maxWidth: numbe
         currentLine = word;
       }
     }
-    lines.push(currentLine);
+    if (currentLine) {
+      lines.push(currentLine);
+    }
   }
   return lines;
 };
