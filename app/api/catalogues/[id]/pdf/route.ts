@@ -3,55 +3,53 @@ import { getServerSession } from 'next-auth';
 import authConfig from '@/auth.config';
 import connectDB from '@/lib/mongodb';
 import Catalogue from '@/models/Catalogue';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, PDFPage, PDFImage, PDFFont } from 'pdf-lib';
 import fs from 'fs/promises';
 import path from 'path';
 
-type RouteContext = { params: Promise<{ id: string }> };
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
 
-// ألوان الديزاين
-const DARK_BLUE = rgb(0.07, 0.18, 0.32);
+// الألوان
+const DARK_BLUE = rgb(0.07, 0.18, 0.32); // اللون الأزرق الداكن الأصلي
+const DARK_RED = rgb(0.5, 0.0, 0.0); // اللون الأحمر الغامق الجديد للهيدر
+const LIGHT_RED = rgb(0.6, 0.1, 0.1); // لون أحمر أفتح قليلا للتدرج
 const LIGHT_BLUE = rgb(0.55, 0.80, 1);
 const GRIS = rgb(0.93, 0.95, 0.97);
 const WHITE = rgb(1, 1, 1);
 
-function wrapText(text: string, font: any, fontSize: number, maxWidth: number) {
+const wrapText = (text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] => {
   if (!text) return [''];
+  const lines: string[] = [];
   const paragraphs = text.split('\n');
-  let lines: string[] = [];
+
   for (const para of paragraphs) {
-    if (!para.trim()) {
-      lines.push(''); // سطر فارغ بين الفقرات
+    if (para.trim() === '') {
+      lines.push('');
       continue;
     }
     const words = para.split(' ');
     let currentLine = '';
+
     for (const word of words) {
-      const testLine = currentLine ? currentLine + ' ' + word : word;
-      let width = 0;
-      try {
-        width = font.widthOfTextAtSize
-          ? font.widthOfTextAtSize(testLine, fontSize)
-          : font.sizeAtHeight
-            ? font.sizeAtHeight(fontSize) * testLine.length * 0.5
-            : testLine.length * fontSize * 0.5;
-      } catch {
-        width = testLine.length * fontSize * 0.5;
-      }
-      if (width > maxWidth && currentLine) {
+      const testLine = currentLine === '' ? word : `${currentLine} ${word}`;
+      const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+      if (textWidth <= maxWidth) {
+        currentLine = testLine;
+      } else {
         lines.push(currentLine);
         currentLine = word;
-      } else {
-        currentLine = testLine;
       }
     }
-    if (currentLine) lines.push(currentLine);
+    lines.push(currentLine);
   }
   return lines;
-}
+};
 
-export async function GET(request: NextRequest, context: RouteContext) {
-  const { id } = await context.params;
+export async function GET(request: NextRequest, { params }: RouteContext) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authConfig);
     if (!session) {
@@ -67,40 +65,179 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // إعداد PDF
     const pdfDoc = await PDFDocument.create();
-    const pageWidth = 595;  // A4 portrait
-    const pageHeight = 842;
-    const marginTop = 40;
-    const marginBottom = 40;
-    let y = pageHeight - marginTop;
-    let page = pdfDoc.addPage([pageWidth, pageHeight]);
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
 
-    // --- الهيدر ---
-    page.drawRectangle({ x: 0, y: pageHeight - 120, width: pageWidth, height: 120, color: DARK_BLUE });
-    try {
-      const logoPath = path.join(process.cwd(), 'public', 'images', 'logo HC light mode.png');
-      const logoBytes = await fs.readFile(logoPath);
-      const logoImage = await pdfDoc.embedPng(logoBytes);
-      page.drawImage(logoImage, { x: 30, y: pageHeight - 100, width: 90, height: 60 });
-    } catch (e) { /* تجاهل إذا لم يوجد شعار */ }
-    page.drawText((catalogue.title || '').toUpperCase(), {
-      x: 140,
-      y: pageHeight - 60,
-      size: 32,
-      font,
-      color: WHITE,
-    });
-    page.drawText(catalogue.shortdesc || '', {
-      x: 140,
-      y: pageHeight - 90,
-      size: 15,
-      font,
-      color: WHITE,
-    });
-    y = pageHeight - 140;
+    const pageWidth = 595;  // A4 portrait
+    const pageHeight = 842; // A4 height
+    const margins = { left: 40, right: 40, top: 40, bottom: 40 }; // تعريف الهوامش
+    const footerHeight = 40; // ارتفاع الفوتر الجديد (أصغر) - تم تعريفه هنا ليصبح متاحًا عالميًا
+    const paddingAfterHeader = 40; // إضافة padding بعد الهيدر
+
+    // دالة لرسم الهيدر
+    const drawHeader = async (page: PDFPage, pdfDoc: PDFDocument, catalogue: any, font: PDFFont, fontBold: PDFFont, pageWidth: number, pageHeight: number, headerHeight: number) => {
+      // رسم الخلفية المتدرجة
+      const numSteps = 50; // عدد الخطوات للتدرج
+      for (let i = 0; i < numSteps; i++) {
+        const ratio = i / (numSteps - 1);
+        const interpolatedColor = rgb(
+          DARK_RED.red * (1 - ratio) + LIGHT_RED.red * ratio,
+          DARK_RED.green * (1 - ratio) + LIGHT_RED.green * ratio,
+          DARK_RED.blue * (1 - ratio) + LIGHT_RED.blue * ratio
+        );
+        page.drawRectangle({
+          x: 0,
+          y: pageHeight - headerHeight + (headerHeight / numSteps) * i,
+          width: pageWidth,
+          height: headerHeight / numSteps,
+          color: interpolatedColor,
+        });
+      }
+
+      // إضافة خط فاصل أبيض في الأسفل
+      page.drawLine({
+        start: { x: 0, y: pageHeight - headerHeight },
+        end: { x: pageWidth, y: pageHeight - headerHeight },
+        thickness: 2,
+        color: WHITE,
+      });
+
+      try {
+        const logoPath = path.join(process.cwd(), 'public', 'images', 'logo HC light mode.png');
+        const logoBytes = await fs.readFile(logoPath);
+        const logoImage = await pdfDoc.embedPng(logoBytes);
+        
+        const originalWidth = logoImage.width;
+        const originalHeight = logoImage.height;
+        
+        const maxHeight = 60; // أقصى ارتفاع للوجو
+        const scale = maxHeight / originalHeight;
+        const scaledWidth = originalWidth * scale;
+        
+        const logoX = 30;
+        const headerContentTopMargin = 20; // الهامش من أعلى مستطيل الهيدر
+
+        // حساب إحداثي Y السفلي للوجو
+        const logoYForDrawImage = pageHeight - headerContentTopMargin - maxHeight;
+
+        page.drawImage(logoImage, { 
+          x: logoX, 
+          y: logoYForDrawImage, 
+          width: scaledWidth,
+          height: maxHeight
+        });
+
+        const textHorizontalPadding = 20; // المسافة بين اللوجو والنص
+        const textStartX = logoX + scaledWidth + textHorizontalPadding;
+
+        const titleFontSize = 32;
+        // حساب إحداثي Y الأساسي لعنوان الكتالوج، مع محاذاة الجزء العلوي منه مع الجزء العلوي للوجو
+        const titleYBaseline = pageHeight - headerContentTopMargin - titleFontSize;
+        
+        page.drawText((catalogue.title || '').toUpperCase(), {
+          x: textStartX,
+          y: titleYBaseline,
+          size: titleFontSize,
+          font: fontBold, // استخدام الخط العريض هنا
+          color: WHITE,
+        });
+
+        const shortDescFontSize = 15;
+        const gapBetweenTitleAndShortDesc = 10;
+
+        // حساب إحداثي Y الأساسي لأول سطر من الوصف المختصر
+        let shortDescCurrentY = titleYBaseline - titleFontSize - gapBetweenTitleAndShortDesc;
+        
+        const availableTextWidth = pageWidth - textStartX - margins.right;
+        const shortDescLinesAdjusted = wrapText(catalogue.shortdesc || '', font, shortDescFontSize, availableTextWidth);
+        
+        for (const line of shortDescLinesAdjusted) {
+          page.drawText(line, {
+            x: textStartX,
+            y: shortDescCurrentY,
+            size: shortDescFontSize,
+            font,
+            color: WHITE,
+          });
+          shortDescCurrentY -= 20; // مسافة بين السطور (20 بكسل لكل سطر)
+        }
+      } catch (e) { /* تجاهل إذا لم يوجد شعار */ }
+    };
+
+    let page = pdfDoc.addPage([pageWidth, pageHeight]);
+    let pageNumber = 1; // رقم الصفحة الحالي
+
+    // دالة لرسم الفوتر
+    const drawFooter = async (page: PDFPage, currentPageNumber: number, pageWidth: number, pageHeight: number, margins: any, font: PDFFont) => {
+      const footerY = margins.bottom; // بداية الفوتر من الأسفل (الهامش السفلي)
+
+      // رسم مستطيل خلفية للفوتر
+      page.drawRectangle({
+        x: 0, 
+        y: footerY, 
+        width: pageWidth, 
+        height: footerHeight,
+        color: GRIS, // لون رمادي خفيف
+      });
+
+      // معلومات الشركة على اليسار
+      const companyInfoStartX = margins.left;
+      const topTextY = footerY + footerHeight - 15; // لتحديد بداية السطر العلوي للنص
+      const bottomTextY = footerY + footerHeight - 30; // لتحديد بداية السطر السفلي للنص
+      
+      // السطر الأول: الموقع ورقم الهاتف بجانب بعضهما
+      page.drawText('www.horizon-chimique.tn', {
+        x: companyInfoStartX,
+        y: topTextY,
+        size: 9,
+        font: font,
+        color: DARK_BLUE,
+      });
+
+      const phoneText = '+216 31 520 033';
+      const websiteWidth = font.widthOfTextAtSize('www.horizon-chimique.tn', 9);
+      const gapBetweenTexts = 20; // مسافة بين النصين
+      const phoneX = companyInfoStartX + websiteWidth + gapBetweenTexts;
+
+      page.drawText(phoneText, {
+        x: phoneX,
+        y: topTextY,
+        size: 9,
+        font: font,
+        color: DARK_BLUE,
+      });
+      
+      // السطر الثاني: العنوان
+      page.drawText('Route Attar Mornaguia La Manouba Tunisie', {
+        x: companyInfoStartX,
+        y: bottomTextY,
+        size: 9,
+        font: font,
+        color: DARK_BLUE,
+      });
+
+      // رقم الصفحة على اليمين
+      const pageNumberText = `Page ${currentPageNumber}`;
+      const pageNumberTextWidth = font.widthOfTextAtSize(pageNumberText, 9);
+      const pageNumberX = pageWidth - margins.right - pageNumberTextWidth;
+      const pageNumberY = footerY + (footerHeight / 2) - (9 / 2); // لمركزة رقم الصفحة عمودياً
+
+      page.drawText(pageNumberText, {
+        x: pageNumberX,
+        y: pageNumberY,
+        size: 9,
+        font: font,
+        color: DARK_BLUE,
+      });
+    };
+
+    // حساب ارتفاع الهيدر لكي نستخدمه في تحديد بداية المحتوى
+    const shortDescLinesInitial = wrapText(catalogue.shortdesc || '', font, 15, pageWidth - (30 + 60 + 20) - margins.right);
+    const initialHeaderHeight = 120 + (shortDescLinesInitial.length * 20);
+
+    await drawHeader(page, pdfDoc, catalogue, font, fontBold, pageWidth, pageHeight, initialHeaderHeight);
+    let y = pageHeight - initialHeaderHeight - paddingAfterHeader; // بدء من تحت الهيدر الجديد مع البادينغ
 
     // --- الأقسام ---
     const sections = [
@@ -136,9 +273,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
       const contentHeight = Math.max(labelBlockHeight, lines.length * lineHeight + 10);
 
       // إذا لم يتبق مساحة كافية، أضف صفحة جديدة
-      if (y - contentHeight < marginBottom) {
+      // مع الأخذ في الاعتبار ارتفاع الفوتر الجديد (footerHeight)
+      if (y - contentHeight < margins.bottom + footerHeight + 10) { // 10 بكسل هامش أمان
+        await drawFooter(page, pageNumber, pageWidth, pageHeight, margins, font); // رسم الفوتر للصفحة الحالية
         page = pdfDoc.addPage([pageWidth, pageHeight]);
-        y = pageHeight - marginTop;
+        pageNumber++; // زيادة رقم الصفحة
+        // رسم الهيدر في الصفحة الجديدة
+        await drawHeader(page, pdfDoc, catalogue, font, fontBold, pageWidth, pageHeight, initialHeaderHeight);
+        y = pageHeight - initialHeaderHeight - paddingAfterHeader; // إعادة تعيين y للصفحة الجديدة
       }
 
       // رسم خلفية العنوان
@@ -188,6 +330,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       y -= contentHeight;
       isBlue = !isBlue;
     }
+
+    // رسم الفوتر للصفحة الأخيرة بعد الانتهاء من جميع الأقسام
+    await drawFooter(page, pageNumber, pageWidth, pageHeight, margins, font);
 
     const pdfBytes = await pdfDoc.save();
     return new NextResponse(Buffer.from(pdfBytes), {
