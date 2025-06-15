@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updateProduct } from '@/lib/db/actions/product.actions'
 import Product from '@/lib/db/models/product.model'
+import connectToDB from '@/lib/mongodb'
 
 export async function PUT(
   req: NextRequest,
@@ -13,6 +14,7 @@ export async function PUT(
     
     const data = await req.json()
     console.log('Received data:', data)
+    console.log('Received images in API route:', data.images);
 
     // Get existing product
     const existingProduct = await Product.findById(id).lean()
@@ -26,7 +28,9 @@ export async function PUT(
       name: data.name,
       price: parseFloat(data.price),
       category: data.category,
-      description: data.description || ''
+      description: data.description || '',
+      images: data.images,
+      ficheTechnique: data.ficheTechnique || null
     }
 
     // Handle stock updates
@@ -62,6 +66,33 @@ export async function PUT(
     console.error('Error in PUT /api/products/[id]:', error)
     return NextResponse.json(
       { error: 'Failed to update product' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  context: any
+) {
+  try {
+    await connectToDB()
+    const id = context.params.id
+    console.log(`DELETE request received for product ID: ${id}`)
+
+    const deletedProduct = await Product.findByIdAndDelete(id)
+
+    if (!deletedProduct) {
+      console.log(`Product with ID: ${id} not found.`)
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
+    console.log(`Product with ID: ${id} deleted successfully.`)
+    return NextResponse.json({ message: 'Product deleted successfully' }, { status: 200 })
+  } catch (error) {
+    console.error('Error in DELETE /api/products/[id]:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete product' },
       { status: 500 }
     )
   }

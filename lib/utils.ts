@@ -21,13 +21,13 @@ export const toSlug = (text?: string): string =>
     .replace(/^-+|-+$/g, '')
 
 
-const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
-  currency: 'USD',
-  style: 'currency',
-  minimumFractionDigits: 2,
+const CURRENCY_FORMATTER = new Intl.NumberFormat('fr-TN', {
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3,
 })
 export function formatCurrency(amount: number) {
-  return CURRENCY_FORMATTER.format(amount)
+  const formatted = CURRENCY_FORMATTER.format(amount);
+  return `${formatted} DT`;
 }
 
 const NUMBER_FORMATTER = new Intl.NumberFormat('en-US')

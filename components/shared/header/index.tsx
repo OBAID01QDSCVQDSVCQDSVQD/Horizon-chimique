@@ -154,7 +154,7 @@ export default function Header() {
                         </div>
                         <div>
                           <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                          <div className="text-sm text-gray-500">${product.price}</div>
+                          <div className="text-sm text-gray-500">{product.price} DT</div>
                         </div>
                       </Link>
                     )

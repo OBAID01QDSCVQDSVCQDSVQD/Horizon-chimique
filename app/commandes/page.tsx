@@ -329,9 +329,7 @@ export default function CommandesPage() {
                       )}
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900 dark:text-white">{item.name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Prix: {item.variantPrice || item.price} €
-                        </p>
+                        <p className="font-semibold">Prix: {item.variantPrice || item.price} DT</p>
                         <div className="text-xs text-gray-500 dark:text-gray-300">
                           Quantité: <span className="font-bold">{item.quantity}</span>
                           {item.variantOptions && Object.entries(item.variantOptions).map(([key, value]) => (
@@ -347,9 +345,7 @@ export default function CommandesPage() {
               </div>
 
               <div className="mt-4 pt-4 border-t dark:border-gray-700">
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Total: {order.totalPrice} €
-                </p>
+                <p className="font-bold text-lg">Total: {order.totalPrice} DT</p>
               </div>
             </div>
           ))}

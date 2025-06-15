@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FiEdit2, FiTrash2, FiPlus, FiX, FiEye, FiFilter, FiImage } from 'react-icons/fi'
+import { FiEdit2, FiTrash2, FiPlus, FiX, FiEye, FiFilter, FiImage, FiUpload } from 'react-icons/fi'
 import React from 'react'
 import TiptapEditor from '@/components/TiptapEditor'
 import { toast } from 'react-hot-toast'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 
 interface Product {
@@ -14,11 +17,16 @@ interface Product {
   description: string
   price: number
   category: {
+    _id: string
     name: string
   }
   stock: number
   images: string[]
   createdAt: string
+  ficheTechnique?: {
+    _id: string
+    title: string
+  }
   variants?: Array<{
     options: Array<{
       attributeId?: string
@@ -32,10 +40,20 @@ interface Product {
   attributes?: Array<{
     attribute?: {
       _id: string
+      name?: string
     }
     value: string
   }>
   numSales?: number
+  countInStock?: number
+  isPublished?: boolean
+  brand?: string
+  listPrice?: number
+  avgRating?: number
+  numReviews?: number
+  ratingDistribution?: { rating: number; count: number }[]
+  reviews?: any[]
+  updatedAt?: Date
 }
 
 interface Filters {
@@ -75,13 +93,41 @@ export default function AdminProductsPage() {
     category: '', 
     stock: '', 
     description: '',
-    variants: [] as any[]
+    variants: [] as any[],
+    ficheTechnique: ''
   })
   const [editLoading, setEditLoading] = useState(false)
   const [lowStockModalOpen, setLowStockModalOpen] = useState(false)
+  const [catalogues, setCatalogues] = useState<{ _id: string; title: string }[]>([])
+
+  // Helper to get attribute name (moved here for clearer scope)
+  const getAttributeName = (id: string, product: any) => {
+    const attribute = product.attributes?.find((attr: any) =>
+      (attr.attribute && typeof attr.attribute === 'object' && attr.attribute._id === id) ||
+      attr.attribute === id
+    );
+    return attribute ? (attribute.attribute && typeof attribute.attribute === 'object' && 'name' in attribute.attribute ? attribute.attribute.name : attribute.attribute) : id;
+  };
+
+  // New states for image management
+  const [baseImages, setBaseImages] = useState<string[]>([]); // Current product images
+  const [newImages, setNewImages] = useState<File[]>([]); // Newly uploaded image files
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]); // URLs of images to delete
+
+  const formatPriceDisplay = (price: number) => {
+    const [int, decimal] = price.toFixed(3).split('.');
+    return (
+      <span className="whitespace-nowrap">
+        <span className="text-base font-medium">{int}</span>
+        {decimal && <span className="text-xs align-super">{decimal}</span>}
+        <span className="text-base font-medium ml-1">DT</span>
+      </span>
+    );
+  };
 
   useEffect(() => {
     fetchCategories()
+    fetchCatalogues()
     fetchProducts()
   }, [page, filters])
 
@@ -124,6 +170,20 @@ export default function AdminProductsPage() {
           await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retrying
         }
       }
+    }
+  }
+
+  const fetchCatalogues = async () => {
+    try {
+      const res = await fetch('/api/catalogues')
+      if (!res.ok) {
+        throw new Error('Failed to fetch catalogues')
+      }
+      const data = await res.json()
+      setCatalogues(data)
+    } catch (error) {
+      console.error('Error fetching catalogues:', error)
+      toast.error('Failed to load catalogues')
     }
   }
 
@@ -193,6 +253,7 @@ export default function AdminProductsPage() {
   }
 
   const openEditModal = (product: Product) => {
+    console.log('openEditModal - Product received:', JSON.parse(JSON.stringify(product)));
     setProductToEdit(product)
     setEditForm({
       name: product.name,
@@ -202,8 +263,12 @@ export default function AdminProductsPage() {
       description: product.description && product.description.trim().startsWith('<')
         ? product.description
         : `<p>${product.description || ''}</p>`,
-      variants: product.variants || []
+      variants: product.variants || [],
+      ficheTechnique: product.ficheTechnique?._id || ''
     })
+    setBaseImages(product.images || [])
+    setNewImages([])
+    setImagesToDelete([])
     setEditModalOpen(true)
   }
 
@@ -238,172 +303,61 @@ export default function AdminProductsPage() {
       console.log('No product to edit')
       return
     }
-    
+
     setEditLoading(true)
     try {
       console.log('Current form data:', editForm)
       console.log('Original product:', productToEdit)
+
+      // 1. Upload new images
+      const uploadedNewImageUrls: string[] = [];
+      if (newImages.length > 0) {
+        for (const file of newImages) {
+          const url = await uploadImageToCloudinary(file);
+          uploadedNewImageUrls.push(url);
+        }
+      }
+
+      // 2. Filter out images to delete from existing baseImages
+      const finalExistingImages = baseImages.filter(img => !imagesToDelete.includes(img));
+
+      // 3. Combine final existing images with newly uploaded images
+      const finalImages = [...finalExistingImages, ...uploadedNewImageUrls];
       
       // Prepare data with only changed fields
       const updatedData: any = {
         name: editForm.name,
         price: parseFloat(editForm.price),
         category: editForm.category,
-        description: editForm.description || ''
+        stock: parseInt(editForm.stock), // Assuming main stock
+        description: editForm.description,
+        variants: editForm.variants,
+        images: finalImages, // Add the updated images array
+        ficheTechnique: editForm.ficheTechnique || null // Add fiche technique
       }
 
-      // Handle stock updates
-      if (editForm.variants && editForm.variants.length > 0) {
-        // For products with variants, update variant stocks
-        console.log('Updating variants stock')
-        updatedData.variants = editForm.variants.map((variant) => ({
-          ...variant,
-          stock: Number(variant.stock) || 0
-        }))
-        console.log('Updated variants:', updatedData.variants)
-      } else {
-        // For products without variants, update main stock
-        console.log('Updating main stock')
-        updatedData.stock = Number(editForm.stock) || 0
-        console.log('Updated main stock:', updatedData.stock)
-      }
-
-      console.log('Final update data:', updatedData)
+      console.log('Images sent to backend:', updatedData.images);
 
       const res = await fetch(`/api/products/${productToEdit._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
+        body: JSON.stringify(updatedData),
       })
 
-      console.log('Response status:', res.status)
-      
-      if (!res.ok) {
+      if (res.ok) {
+        toast.success('Produit mis à jour avec succès!')
+        setEditModalOpen(false)
+        fetchProducts() // Refresh the product list
+      } else {
         const errorData = await res.json()
-        console.error('Update failed:', errorData)
-        throw new Error(errorData.error || 'Erreur lors de la modification')
+        toast.error(errorData.message || 'Échec de la mise à jour du produit')
       }
-
-      const data = await res.json()
-      console.log('Update successful:', data)
-
-      // Update local state
-      setProducts(prev =>
-        prev.map(p =>
-          p._id === productToEdit._id
-            ? {
-                ...data.product,
-                category: categories.find(c => c._id === String(data.product.category)) || data.product.category
-              }
-            : p
-        )
-      )
-
-      // Close modal and show success message
-      setEditModalOpen(false)
-      toast.success('Produit modifié avec succès')
-      
     } catch (error) {
-      console.error('Error in handleEditSave:', error)
-      toast.error(error instanceof Error ? error.message : 'Erreur lors de la modification')
+      console.error('Error updating product:', error)
+      toast.error('Échec de la mise à jour du produit')
     } finally {
       setEditLoading(false)
     }
-  }
-
-  // Helper function to get attribute name
-  const getAttributeName = (id: string, product: any) => {
-    if (!product.attributes) return id
-    const found = product.attributes.find((a: any) => (a.attribute?._id || a.attribute) == id)
-    return found ? found.value : id
-  }
-
-  // Modal component
-  function ProductModal({ product, onClose }: { product: any, onClose: () => void }) {
-    // Helper to check if product has variants with stock
-    const hasVariants = Array.isArray(product.variants) && product.variants.length > 0 && product.variants.some((v: any) => v.stock !== undefined)
-
-    // Helper to get attribute name by id
-    const getAttributeName = (id: string) => {
-      if (!product.attributes) return id
-      const found = product.attributes.find((a: any) => (a.attribute?._id || a.attribute) == id)
-      return found ? found.value : id
-    }
-
-    return (
-      <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center min-h-screen py-4 backdrop-blur-sm bg-black/30 pointer-events-auto"
-        onClick={onClose}
-      >
-        <div
-          className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-xs sm:max-w-lg mx-2 p-4 sm:p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto"
-          onClick={e => e.stopPropagation()}
-        >
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 text-gray-500 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 text-2xl font-bold focus:outline-none"
-            aria-label="Fermer"
-          >
-            &times;
-          </button>
-          <div className="flex flex-col items-center gap-4">
-            <img
-              src={product.images[0] || '/placeholder.jpg'}
-              alt={product.name}
-              className="w-40 h-40 object-contain rounded-lg border bg-white dark:bg-gray-800"
-            />
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{product.name}</h2>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">Catégorie: {product.category?.name || '-'}</div>
-              
-              {/* Price and Stock Display */}
-              {!hasVariants ? (
-                <>
-                  <div className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-2">
-                    Prix: {product.price.toFixed(2)} €
-                  </div>
-                  <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                    Stock: {product.countInStock ?? product.stock ?? 0}
-                  </div>
-                </>
-              ) : (
-                <div className="text-sm text-gray-700 dark:text-gray-300 mb-2 text-left">
-                  <div className="font-semibold mb-1">Variantes:</div>
-                  <ul className="space-y-2">
-                    {product.variants.map((variant: any, i: number) => (
-                      <li key={i} className="border-b border-gray-200 dark:border-gray-800 pb-2 last:border-b-0">
-                        <div className="flex flex-col gap-1">
-                          <div className="font-medium">
-                            {variant.options && Array.isArray(variant.options)
-                              ? variant.options.map((opt: any) => getAttributeName(opt.attributeId || opt.attribute)).join(' / ')
-                              : ''}
-                          </div>
-                          <div className="text-green-700 dark:text-green-300 font-bold">
-                            Prix: {variant.price !== undefined ? variant.price.toFixed(2) : product.price.toFixed(2)} €
-                          </div>
-                          <div className="text-blue-700 dark:text-blue-300 font-bold">
-                            Stock: {variant.stock ?? 0}
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="text-sm text-gray-700 dark:text-gray-300 mb-2" dangerouslySetInnerHTML={{ __html: product.description }} />
-              {product.images.length > 1 && (
-                <div className="flex gap-2 mt-2 flex-wrap justify-center">
-                  {product.images.slice(1).map((img: any, i: number) => (
-                    <img key={i} src={img} alt="extra" className="w-14 h-14 object-contain rounded border bg-white dark:bg-gray-800" />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   // --- قسم المنتجات المميزة (منطق الستوك الذكي) ---
@@ -435,6 +389,32 @@ export default function AdminProductsPage() {
     const variantSales = p.variants?.reduce((sum, v) => sum + (v.numSales || 0), 0) || 0;
     return variantSales === 0 && (p.numSales || 0) === 0;
   });
+
+  // Helper to upload images to Cloudinary (copied from create/page.tsx)
+  const uploadImageToCloudinary = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'ecommerce-app'); // Make sure this preset is correct
+    const res = await fetch('https://api.cloudinary.com/v1_1/dwio60ll1/image/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    return data.secure_url;
+  };
+
+  // Handler for adding new base images
+  const handleBaseImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setNewImages(prev => [...prev, ...Array.from(e.target.files || [])]);
+    }
+  };
+
+  // Handler for deleting existing base images
+  const handleBaseImageDelete = (imageUrl: string) => {
+    setImagesToDelete(prev => [...prev, imageUrl]);
+    setBaseImages(prev => prev.filter(img => img !== imageUrl));
+  };
 
   if (loading) {
     return (
@@ -576,7 +556,7 @@ export default function AdminProductsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Prix Min (€)
+                    Prix Min (DT)
                   </label>
                   <input
                     type="number"
@@ -588,7 +568,7 @@ export default function AdminProductsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Prix Max (€)
+                    Prix Max (DT)
                   </label>
                   <input
                     type="number"
@@ -719,7 +699,7 @@ export default function AdminProductsPage() {
                       </td>
                       <td className="px-2 md:px-4 py-3 align-top">
                         <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                          {product.price.toFixed(2)} €
+                          {formatPriceDisplay(product.price)}
                         </div>
                       </td>
                       <td className="px-2 md:px-4 py-3 align-top">
@@ -791,7 +771,7 @@ export default function AdminProductsPage() {
                       </div>
                       <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold">Prix</div>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">{product.price.toFixed(2)} €</div>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">{formatPriceDisplay(product.price)}</div>
                       </div>
                       <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold">Stock</div>
@@ -863,28 +843,190 @@ export default function AdminProductsPage() {
 
       {/* Modal */}
       {modalOpen && selectedProduct && (
-        <ProductModal product={selectedProduct} onClose={() => setModalOpen(false)} />
-      )}
-
-      {/* Edit Modal */}
-      {editModalOpen && productToEdit && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center min-h-screen py-4 backdrop-blur-sm bg-black/40" onClick={() => setEditModalOpen(false)}>
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm"
+          onClick={() => setModalOpen(false)}
+        >
           <div
-            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md mx-2 p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl mx-2 p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <button
-              onClick={() => setEditModalOpen(false)}
+              onClick={() => setModalOpen(false)}
               className="absolute top-3 right-3 text-gray-500 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 text-2xl font-bold focus:outline-none"
               aria-label="Fermer"
             >
               &times;
             </button>
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Modifier le Produit</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">{selectedProduct.name}</h2>
+            
+            {/* Product Images */}
+            {selectedProduct.images && selectedProduct.images.length > 0 && (
+              <div className="mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {selectedProduct.images.map((image, index) => (
+                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                      <img
+                        src={image}
+                        alt={`${selectedProduct.name} - Image ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Product Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Informations générales</h3>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Catégorie:</span>
+                    <p className="text-gray-900 dark:text-gray-100">{selectedProduct.category?.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Prix:</span>
+                    <p className="text-gray-900 dark:text-gray-100">{formatPriceDisplay(selectedProduct.price)}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Stock:</span>
+                    <p className="text-gray-900 dark:text-gray-100">{selectedProduct.stock}</p>
+                  </div>
+                  {selectedProduct.ficheTechnique && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Fiche Technique:</span>
+                      <p className="text-gray-900 dark:text-gray-100">{selectedProduct.ficheTechnique.title}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Variants */}
+              {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Variantes</h3>
+                  <div className="space-y-3">
+                    {selectedProduct.variants.map((variant, index) => (
+                      <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-2">
+                        <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          {variant.options && Array.isArray(variant.options)
+                            ? variant.options.map((opt: any) => {
+                                console.log('Variant Option - opt:', JSON.parse(JSON.stringify(opt)));
+                                console.log('productToEdit.attributes:', JSON.parse(JSON.stringify(productToEdit?.attributes)));
+                                // opt.attributeId يجب أن يكون كائنًا مأهولًا { _id, name }
+                                // opt.value هو ID مثل '683c072cdc9ff7fcbac25386'
+
+                                const attributeName = opt.attributeId?.name; // مثلاً 'Color', 'Seau'
+                                let displayValue = opt.value; // القيمة الافتراضية هي الـ ID
+
+                                // البحث عن القيمة الوصفية في productToEdit.attributes باستخدام opt.value كـ _id
+                                const matchingAttributeValueEntry = productToEdit?.attributes?.find(
+                                  (attrItem: any) =>
+                                    attrItem.value === opt.value && // Match the attribute value entry by its value (the descriptive string)
+                                    attrItem.attribute &&
+                                    attrItem.attribute._id === opt.attributeId?._id // Match attribute type
+                                );
+
+                                if (matchingAttributeValueEntry) {
+                                  // إذا تم العثور على إدخال مطابق، استخدم قيمته الوصفية 'value'
+                                  displayValue = matchingAttributeValueEntry.value;
+                                }
+
+                                return attributeName ? `${attributeName}: ${displayValue}` : displayValue;
+                              }).filter(Boolean).join(' / ')
+                            : ''}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm text-gray-600 dark:text-gray-400">Stock:</label>
+                          <input
+                            type="number"
+                            className="flex-1 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            value={variant.stock ?? 0}
+                            onChange={e => handleEditChange('variantStock', e.target.value, index)}
+                            min="0"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Description</h3>
+              <div 
+                className="prose dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: selectedProduct.description }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة منبثقة لكل المنتجات التي ستوكها أقل من 5 */}
+      {lowStockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-2xl relative animate-fade-in max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setLowStockModalOpen(false)} className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-2xl font-bold">&times;</button>
+            <h2 className="text-xl font-bold mb-4 text-yellow-500 text-center">Tous les produits presque épuisés</h2>
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-gray-100 dark:bg-gray-800">
+                  <th className="px-3 py-2 text-left">Produit</th>
+                  <th className="px-3 py-2 text-left">Attributs</th>
+                  <th className="px-3 py-2 text-center">Stock</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lowStockList.map((item, i) => (
+                  <tr key={item.product._id + '-' + i} className="border-b border-gray-200 dark:border-gray-800">
+                    <td className="px-3 py-2">{item.product.name}</td>
+                    <td className="px-3 py-2">{item.attributes || '-'}</td>
+                    <td className="px-3 py-2 text-center text-red-600 font-bold">{item.stock}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editModalOpen && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm"
+          onClick={() => {
+            setEditModalOpen(false);
+            setNewImages([]); // Clear new images on close
+            setImagesToDelete([]); // Clear images to delete on close
+          }}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-lg mx-2 p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setEditModalOpen(false);
+                setNewImages([]); // Clear new images on close
+                setImagesToDelete([]); // Clear images to delete on close
+              }}
+              className="absolute top-3 right-3 text-gray-500 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 text-2xl font-bold focus:outline-none"
+              aria-label="Fermer"
+            >
+              &times;
+            </button>
+            <h2 className="text-xl font-bold mb-4">Modifier le Produit</h2>
             <div className="space-y-4">
+              {/* Product Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Nom du produit</label>
                 <input
+                  type="text"
                   className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={editForm.name}
                   onChange={e => handleEditChange('name', e.target.value)}
@@ -892,40 +1034,83 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Prix principal</label>
-                <input
-                  type="number"
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={editForm.price}
-                  onChange={e => handleEditChange('price', e.target.value)}
-                  placeholder="Prix (€)"
-                />
+              {/* General Info Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Price */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Prix</label>
+                  <input
+                    type="number"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={editForm.price}
+                    onChange={e => handleEditChange('price', e.target.value)}
+                    placeholder="Prix"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Catégorie</label>
+                  <select
+                    value={editForm.category}
+                    onChange={e => handleEditChange('category', e.target.value)}
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Sélectionner une catégorie</option>
+                    {(Array.isArray(categories) ? categories : []).map(cat => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Fiche Technique */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fiche Technique</label>
+                  <select
+                    value={editForm.ficheTechnique}
+                    onChange={e => handleEditChange('ficheTechnique', e.target.value)}
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Sélectionner une fiche technique</option>
+                    {(Array.isArray(catalogues) ? catalogues : []).map(cat => (
+                      <option key={cat._id} value={cat._id}>{cat.title}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Catégorie</label>
-                <select
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={editForm.category}
-                  onChange={e => handleEditChange('category', e.target.value)}
-                >
-                  <option value="">Sélectionner une catégorie</option>
-                  {categories.map(cat => (
-                    <option key={cat._id} value={cat._id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Stock and Variants Section */}
+              {/* Stock Management */}
               {editForm.variants && editForm.variants.length > 0 ? (
-                <div className="space-y-3">
+                <div>
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100">Stock des variantes</h3>
                   {editForm.variants.map((variant, index) => (
-                    <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                    <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-2">
                       <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">
                         {variant.options && Array.isArray(variant.options)
-                          ? variant.options.map((opt: any) => getAttributeName(opt.attributeId || opt.attribute, productToEdit)).join(' / ')
+                          ? variant.options.map((opt: any) => {
+                              console.log('Variant Option - opt:', JSON.parse(JSON.stringify(opt)));
+                              console.log('productToEdit.attributes:', JSON.parse(JSON.stringify(productToEdit?.attributes)));
+                              // opt.attributeId يجب أن يكون كائنًا مأهولًا { _id, name }
+                              // opt.value هو ID مثل '683c072cdc9ff7fcbac25386'
+
+                              const attributeName = opt.attributeId?.name; // مثلاً 'Color', 'Seau'
+                              let displayValue = opt.value; // القيمة الافتراضية هي الـ ID
+
+                              // البحث عن القيمة الوصفية في productToEdit.attributes باستخدام opt.value كـ _id
+                              const matchingAttributeValueEntry = productToEdit?.attributes?.find(
+                                (attrItem: any) =>
+                                  attrItem.value === opt.value && // Match the attribute value entry by its value (the descriptive string)
+                                  attrItem.attribute &&
+                                  attrItem.attribute._id === opt.attributeId?._id // Match attribute type
+                              );
+
+                              if (matchingAttributeValueEntry) {
+                                // إذا تم العثور على إدخال مطابق، استخدم قيمته الوصفية 'value'
+                                displayValue = matchingAttributeValueEntry.value;
+                              }
+
+                              return attributeName ? `${attributeName}: ${displayValue}` : displayValue;
+                            }).filter(Boolean).join(' / ')
                           : ''}
                       </div>
                       <div className="flex items-center gap-2">
@@ -955,6 +1140,7 @@ export default function AdminProductsPage() {
                 </div>
               )}
 
+              {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Description du produit</label>
                 <TiptapEditor
@@ -966,7 +1152,78 @@ export default function AdminProductsPage() {
                   }}
                 />
               </div>
+
+              {/* Image Section - New */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl shadow p-4 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FiImage className="text-blue-500" />
+                  <h2 className="text-xl font-semibold">Images du produit</h2>
+                </div>
+
+                {/* Existing Images */}
+                {baseImages.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Images actuelles:</label>
+                    <div className="flex flex-wrap gap-2">
+                      {baseImages.map((imageUrl, index) => (
+                        <div key={index} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                          <img src={imageUrl} alt={`Product Image ${index}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleBaseImageDelete(imageUrl)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 transition-colors"
+                            title="Supprimer cette image"
+                          >
+                            <FiX className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* New Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Ajouter de nouvelles images:</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleBaseImageUpload}
+                    className="block w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-md file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-blue-50 file:text-blue-700
+                                hover:file:bg-blue-100"
+                  />
+                </div>
+
+                {/* Preview New Images */}
+                {newImages.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Nouvelles images à télécharger:</label>
+                    <div className="flex flex-wrap gap-2">
+                      {newImages.map((file, index) => (
+                        <div key={index} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                          <img src={URL.createObjectURL(file)} alt={`New Image ${index}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setNewImages(prev => prev.filter((_, i) => i !== index))}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 transition-colors"
+                            title="Annuler le téléchargement de cette image"
+                          >
+                            <FiX className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Save Button */}
             <button
               onClick={handleEditSave}
               disabled={editLoading}
@@ -974,34 +1231,6 @@ export default function AdminProductsPage() {
             >
               {editLoading ? 'Enregistrement...' : 'Enregistrer'}
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* نافذة منبثقة لكل المنتجات التي ستوكها أقل من 5 */}
-      {lowStockModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-2xl relative animate-fade-in max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setLowStockModalOpen(false)} className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-2xl font-bold">&times;</button>
-            <h2 className="text-xl font-bold mb-4 text-yellow-500 text-center">Tous les produits presque épuisés</h2>
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="bg-gray-100 dark:bg-gray-800">
-                  <th className="px-3 py-2 text-left">Produit</th>
-                  <th className="px-3 py-2 text-left">Attributs</th>
-                  <th className="px-3 py-2 text-center">Stock</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lowStockList.map((item, i) => (
-                  <tr key={item.product._id + '-' + i} className="border-b border-gray-200 dark:border-gray-800">
-                    <td className="px-3 py-2">{item.product.name}</td>
-                    <td className="px-3 py-2">{item.attributes || '-'}</td>
-                    <td className="px-3 py-2 text-center text-red-600 font-bold">{item.stock}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       )}

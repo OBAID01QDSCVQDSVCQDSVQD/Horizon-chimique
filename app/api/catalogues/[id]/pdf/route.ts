@@ -133,10 +133,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         color: WHITE,
       });
 
-      try {
-        const logoPath = path.join(process.cwd(), 'public', 'images', 'logo HC light mode.png');
-        const logoBytes = await fs.readFile(logoPath);
-        const logoImage = await pdfDoc.embedPng(logoBytes);
+    try {
+      const logoPath = path.join(process.cwd(), 'public', 'images', 'logo HC light mode.png');
+      const logoBytes = await fs.readFile(logoPath);
+      const logoImage = await pdfDoc.embedPng(logoBytes);
         
         const originalWidth = logoImage.width;
         const originalHeight = logoImage.height;
@@ -165,13 +165,13 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         // حساب إحداثي Y الأساسي لعنوان الكتالوج، مع محاذاة الجزء العلوي منه مع الجزء العلوي للوجو
         const titleYBaseline = pageHeight - headerContentTopMargin - titleFontSize;
         
-        page.drawText((catalogue.title || '').toUpperCase(), {
+    page.drawText((catalogue.title || '').toUpperCase(), {
           x: textStartX,
           y: titleYBaseline,
           size: titleFontSize,
           font: fontBold, // استخدام الخط العريض هنا
-          color: WHITE,
-        });
+      color: WHITE,
+    });
 
         const shortDescFontSize = 15;
         const gapBetweenTitleAndShortDesc = 10;
@@ -187,9 +187,9 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             x: textStartX,
             y: shortDescCurrentY,
             size: shortDescFontSize,
-            font,
-            color: WHITE,
-          });
+      font,
+      color: WHITE,
+    });
           shortDescCurrentY -= 20; // مسافة بين السطور (20 بكسل لكل سطر)
         }
       } catch (e) { /* تجاهل إذا لم يوجد شعار */ }

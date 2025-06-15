@@ -40,6 +40,7 @@ export interface IProduct extends Document {
   reviews?: any[]
   createdAt: Date
   updatedAt: Date
+  ficheTechnique?: mongoose.Types.ObjectId | string;
 }
 
 const productSchema = new Schema<IProduct>(
@@ -90,6 +91,7 @@ const productSchema = new Schema<IProduct>(
     numSales: { type: Number, default: 0 },
     isPublished: { type: Boolean, default: false },
     reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review', default: [] }],
+    ficheTechnique: { type: mongoose.Schema.Types.ObjectId, ref: 'Catalogue' },
   },
   {
     timestamps: true,

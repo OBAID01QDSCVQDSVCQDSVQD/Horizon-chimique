@@ -19,17 +19,17 @@ export default function ClientProviders({
 
   return (
     <SessionProvider>
-      <>
-        {isSidebarOpen ? (
-          <div className='flex min-h-screen'>
-            <div className='flex-1 overflow-hidden'>{children}</div>
-            <CartSidebar onClose={() => setIsSidebarOpen(false)} />
-          </div>
-        ) : (
-          <div>{children}</div>
-        )}
-        <Toaster />
-      </>
+    <>
+      {isSidebarOpen ? (
+        <div className='flex min-h-screen'>
+          <div className='flex-1 overflow-hidden'>{children}</div>
+          <CartSidebar onClose={() => setIsSidebarOpen(false)} />
+        </div>
+      ) : (
+        <div>{children}</div>
+      )}
+      <Toaster />
+    </>
     </SessionProvider>
   )
 }

@@ -38,6 +38,17 @@ export async function GET(request: Request) {
       .limit(limit)
       .sort({ createdAt: -1 })
       .populate('category')
+      .populate('ficheTechnique')
+      .populate({
+        path: 'attributes.attribute',
+        model: 'Attribute',
+        select: 'name'
+      })
+      .populate({
+        path: 'variants.options.attributeId',
+        model: 'Attribute',
+        select: 'name'
+      })
 
     const total = await Product.countDocuments(query)
 

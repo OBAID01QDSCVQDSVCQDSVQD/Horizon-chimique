@@ -29,14 +29,42 @@ export async function getAllProducts() {
 
 export async function createProduct(data: any) {
   await connectToDatabase()
-  const newProduct = new Product(data)
-  await newProduct.save()
+  let newProduct = new Product(data)
+
+  let isUnique = false;
+  let attempts = 0;
+  const MAX_ATTEMPTS = 10; // لتجنب حلقة لا نهائية
+
+  while (!isUnique && attempts < MAX_ATTEMPTS) {
+    try {
+      if (attempts > 0) {
+        // إذا لم يكن فريدًا في المحاولة الأولى، أضف رقمًا عشوائيًا
+        const randomString = Math.random().toString(36).substring(2, 8); // سلسلة عشوائية قصيرة
+        newProduct.slug = `${data.slug}-${randomString}`;
+      }
+      await newProduct.save();
+      isUnique = true;
+    } catch (error: any) {
+      if (error.code === 11000) { // خطأ تكرار المفتاح
+        attempts++;
+        // لا تفعل شيئًا، ستحاول الحلقة مرة أخرى بـ slug مختلف
+      } else {
+        throw error; // أخطاء أخرى يجب أن يتم طرحها
+      }
+    }
+  }
+
+  if (!isUnique) {
+    throw new Error("Failed to create unique slug after multiple attempts.");
+  }
+
   return JSON.parse(JSON.stringify(newProduct))
 }
 
 export async function updateProduct(data: any) {
   try {
     await connectToDatabase()
+    console.log('Data received in updateProduct action:', data);
     
     // If updating variants, calculate total stock
     if (data.variants && Array.isArray(data.variants)) {
@@ -55,6 +83,7 @@ export async function updateProduct(data: any) {
     if (!updatedProduct) {
       return { success: false, message: 'Product not found' }
     }
+    console.log('Updated product from DB in updateProduct action:', updatedProduct);
 
     return { success: true, product: updatedProduct }
   } catch (error) {

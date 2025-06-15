@@ -1,5 +1,6 @@
 'use client'
-import { cn, formatCurrency } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { PriceDisplay } from '@/components/shared/price-display'
 
 const ProductPrice = ({
   price,
@@ -26,18 +27,12 @@ const ProductPrice = ({
   const discountPercent = baseListPrice && basePrice
     ? Math.round(100 - (basePrice / baseListPrice) * 100)
     : Math.round(100 - (price / listPrice) * 100)
-  const stringValue = price.toString()
-  const [intValue, floatValue] = stringValue.includes('.')
-    ? stringValue.split('.')
-    : [stringValue, '']
 
   return plain ? (
-    formatCurrency(price)
+    <PriceDisplay price={price} className={className} />
   ) : listPrice == 0 ? (
     <div className={cn('text-3xl', className)}>
-      <span className='text-xs align-super'>DT</span>
-      {intValue}
-      <span className='text-xs align-super'>{floatValue}</span>
+      <PriceDisplay price={price} />
     </div>
   ) : isDeal ? (
     <div className='space-y-2'>
@@ -51,12 +46,10 @@ const ProductPrice = ({
       </div>
       <div className={`flex ${forListing && 'justify-center'} items-center gap-2`}>
         <div className={cn('text-3xl', className)}>
-          <span className='text-xs align-super'>DT</span>
-          {intValue}
-          <span className='text-xs align-super'>{floatValue}</span>
+          <PriceDisplay price={price} />
         </div>
         <div className='text-muted-foreground text-xs py-2'>
-          Was: <span className='line-through'>{formatCurrency(listPrice)}</span>
+          Was: <span className='line-through'><PriceDisplay price={listPrice} /></span>
         </div>
       </div>
     </div>
@@ -65,13 +58,11 @@ const ProductPrice = ({
       <div className='flex justify-center gap-3'>
         <div className='text-3xl text-orange-700'>-{discountPercent}%</div>
         <div className={cn('text-3xl', className)}>
-          <span className='text-xs align-super'>DT</span>
-          {intValue}
-          <span className='text-xs align-super'>{floatValue}</span>
+          <PriceDisplay price={price} />
         </div>
       </div>
       <div className='text-muted-foreground text-xs py-2'>
-        List price: <span className='line-through'>{formatCurrency(listPrice)}</span>
+        List price: <span className='line-through'><PriceDisplay price={listPrice} /></span>
       </div>
     </div>
   )

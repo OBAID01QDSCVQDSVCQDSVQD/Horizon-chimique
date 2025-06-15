@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { toast } from 'react-hot-toast';
+import { PriceDisplay } from '@/components/shared/price-display'
 
 interface Order {
   _id: string;
@@ -369,7 +370,9 @@ export default function AdminOrdersPage() {
                   <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
                     {order.shippingInfo?.address || '-'}{order.shippingInfo?.city ? ', ' + order.shippingInfo.city : ''}{order.shippingInfo?.country ? ', ' + order.shippingInfo.country : ''}{order.shippingInfo?.postalCode ? ' ' + order.shippingInfo.postalCode : ''}
                   </td>
-                  <td className="px-4 py-3 font-semibold text-blue-600 dark:text-blue-400">{Number(order.totalPrice).toLocaleString('fr-TN', { minimumFractionDigits: 3 })} <span className="ml-1">DT</span></td>
+                  <td className="px-4 py-3 font-semibold text-blue-600 dark:text-blue-400">
+                    <PriceDisplay price={Number(order.totalPrice)} />
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded text-xs font-bold ${statusColors[order.status] || 'bg-gray-200 text-gray-800'}`}>{statusLabels[order.status] || order.status}</span>
                   </td>
@@ -445,7 +448,9 @@ export default function AdminOrdersPage() {
                 </div>
                 <div>
                   <div className="text-xs text-blue-500">Total</div>
-                  <div className="font-bold text-blue-700 dark:text-blue-300 text-lg">{Number(selectedOrder.totalPrice).toLocaleString('fr-TN', { minimumFractionDigits: 3 })} <span className="ml-1">DT</span></div>
+                  <div className="font-bold text-blue-700 dark:text-blue-300 text-lg">
+                    <PriceDisplay price={Number(selectedOrder.totalPrice)} />
+                  </div>
                 </div>
               </div>
               {/* معلومات العميل */}
@@ -485,8 +490,12 @@ export default function AdminOrdersPage() {
                         )}
                         <div className="flex flex-wrap gap-6 text-xs text-gray-500 dark:text-gray-300 mt-2">
                           <div>Qté: <span className="font-bold text-gray-700 dark:text-gray-200">{item.quantity}</span></div>
-                          <div>Prix: <span className="font-bold text-primary dark:text-yellow-400">{Number(item.price).toLocaleString('fr-TN', { minimumFractionDigits: 3 })} <span className="ml-1">DT</span></span></div>
-                          <div>Total: <span className="font-bold">{Number(item.price * item.quantity).toLocaleString('fr-TN', { minimumFractionDigits: 3 })} <span className="ml-1">DT</span></span></div>
+                          <div>Prix: <span className="font-bold text-primary dark:text-yellow-400">
+                            <PriceDisplay price={Number(item.price)} />
+                          </span></div>
+                          <div>Total: <span className="font-bold">
+                            <PriceDisplay price={Number(item.price * item.quantity)} />
+                          </span></div>
                         </div>
                       </div>
                     </div>

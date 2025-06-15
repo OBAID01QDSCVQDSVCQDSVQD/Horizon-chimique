@@ -10,6 +10,8 @@ import Rating from '@/components/shared/product/rating';
 import AddToBrowsingHistory from '@/components/shared/product/add-to-browsing-history';
 import AddToCart from '@/components/shared/product/add-to-cart';
 import { generateId, round2 } from '@/lib/utils';
+import { FiDownload } from 'react-icons/fi';
+import { Button } from '@/components/ui/button';
 
 // نصوص فرنسية
 const STOCK_TEXT = 'Stock disponible :';
@@ -102,7 +104,7 @@ export default function ProductDetailsClient({ product, relatedProducts }: { pro
         <div className='flex w-full flex-col gap-2 md:p-5 col-span-2'>
           <div className='flex flex-col gap-3'>
             <p className='p-medium-16 rounded-full bg-grey-500/10 text-grey-500'>
-              Brand {product.brand} {product.category}
+              Brand {product.brand}
             </p>
             <h1 className='font-bold text-lg lg:text-xl'>{product.name}</h1>
             <div className='flex items-center gap-2'>
@@ -132,9 +134,55 @@ export default function ProductDetailsClient({ product, relatedProducts }: { pro
             />
           </div>
           <Separator className='my-2' />
+          {/* Fiche Technique Section */}
+          {(() => {
+            console.log('Fiche Technique Data:', {
+              ficheTechnique: product.ficheTechnique,
+              type: typeof product.ficheTechnique
+            });
+            
+            const ficheTechniqueId = typeof product.ficheTechnique === 'string' ? product.ficheTechnique : product.ficheTechnique?._id;
+            const ficheTechniqueTitle = product.ficheTechnique?.title; // Assuming title exists if it's an object
+
+            if (!ficheTechniqueId) {
+              console.log('No ficheTechnique ID found');
+              return null;
+            }
+
+            return (
+              <Card className="p-4 mt-5">
+                <CardContent className="p-0 space-y-4">
+                  {ficheTechniqueTitle && <h2 className='font-bold text-lg'>{ficheTechniqueTitle}</h2>}
+                  <Button
+                    asChild
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-2 mt-2"
+                  >
+                    <a
+                      href={`/api/catalogues/${ficheTechniqueId}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center"
+                    >
+                      <FiDownload className="h-4 w-4" />
+                      <span>Télécharger la fiche technique</span>
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })()}
           <div className='flex flex-col gap-2'>
             <p className='p-bold-20 text-grey-600'>Description:</p>
-            <div className='p-medium-16 lg:p-regular-18' dangerouslySetInnerHTML={{ __html: product.description }} />
+            <div
+              className='p-medium-16 lg:p-regular-18'
+              dangerouslySetInnerHTML={{
+                __html: product.description && !product.description.includes("ne erreur inattendue s'est produite")
+                  ? product.description
+                  : "Aucune description n'est disponible pour le moment."
+              }}
+            />
           </div>
         </div>
         <div>
@@ -176,7 +224,7 @@ export default function ProductDetailsClient({ product, relatedProducts }: { pro
       <section className='mt-10'>
         <ProductSlider
           products={relatedProducts}
-          title={`Best Sellers in ${product.category}`}
+          title={`Meilleures ventes dans ${product.category?.name || 'cette catégorie'}`}
         />
       </section>
     </section>

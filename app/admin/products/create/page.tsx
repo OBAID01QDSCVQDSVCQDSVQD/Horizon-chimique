@@ -41,23 +41,75 @@ export default function CreateProductPage() {
   const [aiImages, setAIImages] = useState<File[]>([])
   const [aiPrompt, setAIPrompt] = useState('Écris une description commerciale pour ce produit')
   const [aiRawResult, setAiRawResult] = useState('')
+  const [ficheTechnique, setFicheTechnique] = useState('')
+  const [catalogues, setCatalogues] = useState<{ _id: { $oid: string } | string; title: string }[]>([])
+  const [catalogueSearch, setCatalogueSearch] = useState('')
+  const [loadingCatalogues, setLoadingCatalogues] = useState(false)
+  const [cataloguesError, setCataloguesError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchAttributes() {
-      const res = await getAllAttributes()
-      setAttributes(res)
+    let isMounted = true;
+
+    async function fetchData() {
+      try {
+        // Fetch attributes
+        const attributesRes = await getAllAttributes();
+        if (isMounted) setAttributes(attributesRes);
+
+        // Fetch categories
+        const categoriesRes = await fetch('/api/categories/list');
+        const categoriesData = await categoriesRes.json();
+        console.log('Categories data:', categoriesData); // Debug log
+        if (isMounted) {
+          if (categoriesData.categories && Array.isArray(categoriesData.categories)) {
+            setCategories(categoriesData.categories);
+          } else {
+            console.error('Invalid categories data format:', categoriesData);
+          }
+        }
+
+        // Fetch catalogues
+        setLoadingCatalogues(true);
+        setCataloguesError(null);
+        const cataloguesRes = await fetch('/api/catalogues');
+        if (!cataloguesRes.ok) {
+          throw new Error('Erreur lors de la récupération des catalogues');
+        }
+        const cataloguesData = await cataloguesRes.json();
+        console.log('Catalogues data:', cataloguesData); // Debug log
+        if (isMounted) {
+          let formattedCatalogues = [];
+          if (Array.isArray(cataloguesData)) {
+            formattedCatalogues = cataloguesData;
+          } else if (cataloguesData && typeof cataloguesData === 'object') {
+            // If it's a single object, wrap it in an array
+            formattedCatalogues = [cataloguesData];
+          }
+          setCatalogues(formattedCatalogues);
+          setLoadingCatalogues(false);
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        if (isMounted) {
+          setCataloguesError('Impossible de charger les catalogues. Veuillez réessayer.');
+          setLoadingCatalogues(false);
+        }
+      }
     }
-    fetchAttributes()
-    async function fetchCategories() {
-      const res = await fetch('/api/categories/list')
-      const data = await res.json()
-      setCategories(data.categories)
-    }
-    fetchCategories()
-  }, [])
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array to run only once
 
   const filteredCategories = categories.filter(cat =>
-    cat.name.toLowerCase().startsWith(categorySearch.toLowerCase())
+    cat?.name?.toLowerCase().startsWith(categorySearch.toLowerCase())
+  )
+
+  const filteredCatalogues = catalogues.filter(cat =>
+    cat?.title?.toLowerCase().startsWith(catalogueSearch.toLowerCase())
   )
 
   useEffect(() => {
@@ -202,8 +254,8 @@ export default function CreateProductPage() {
         category,
         brand,
         description,
-        price: parseFloat(price) || 0,
-        listPrice: parseFloat(listPrice) || 0,
+        price: parseFloat(price),
+        listPrice: parseFloat(listPrice),
         countInStock: variants.length === 0 ? parseInt(countInStock) || 0 : 0, // ignore main stock if variants
         images: baseImages,
         attributes: attributesForDb,
@@ -213,6 +265,7 @@ export default function CreateProductPage() {
         numReviews: 0,
         numSales: 0,
         tags: ['new arrival'],
+        ficheTechnique: ficheTechnique || undefined,
       }
 
       const res = await fetch('/api/products/create', {
@@ -221,12 +274,13 @@ export default function CreateProductPage() {
         body: JSON.stringify(productData),
       })
 
-      const data = await res.json()
-      if (data.success) {
-        router.push('/admin/products')
-        router.refresh()
+      const result = await res.json()
+      if (res.ok) {
+        toast.success('Product created successfully!');
+        router.push(`/product/${result.product.slug}`);
       } else {
-        setError(data.message || 'Error creating product')
+        setError(result.message || 'Failed to create product');
+        toast.error(result.message || 'Failed to create product');
       }
     } catch (err: any) {
       setError(err.message || 'Error creating product')
@@ -273,6 +327,10 @@ export default function CreateProductPage() {
     } finally {
       setLoadingAI(false)
     }
+  }
+
+  const handleFicheTechniqueChange = (value: string | null) => {
+    setFicheTechnique(value || '')
   }
 
   return (
@@ -425,27 +483,73 @@ export default function CreateProductPage() {
         </div>
       </div>
       {/* Section: Catégorie */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 space-y-4">
-        <div className="flex items-center gap-2 mb-2">
-          <FiTag className="text-blue-500" />
-          <h2 className="text-xl font-semibold">Catégorie</h2>
-        </div>
-        <div>
-          <label className="block font-medium mb-1">Catégorie</label>
-          <select
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-          >
-            <option value="">Sélectionner une catégorie</option>
-            {categories.map(cat => (
-              <option key={cat._id} value={cat._id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <Card className="mt-4">
+        <CardHeader>
+          <div className="flex items-center gap-2 mb-2">
+            <FiTag className="text-blue-500" />
+            <h2 className="text-xl font-semibold">Catégorie</h2>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-5 p-4 md:flex-row md:items-start">
+            <div className="flex-1">
+              <h2 className="text-xl font-semibold">Catégorie</h2>
+              <div className="mt-4">
+                <label className="block font-medium mb-1" htmlFor="category">Catégorie</label>
+                <select
+                  id="category"
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Sélectionner une catégorie</option>
+                  {categories && categories.length > 0 ? (
+                    categories.map(cat => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>Aucune catégorie disponible</option>
+                  )}
+                </select>
+              </div>
+            </div>
+            {/* Fiche Technique Select */}
+            <div className="flex-1">
+              <h2 className="text-xl font-semibold">Fiche Technique</h2>
+              <div className="mt-4">
+                <label htmlFor="ficheTechnique" className="block font-medium mb-1">Fiche Technique</label>
+                <select
+                  id="ficheTechnique"
+                  value={ficheTechnique}
+                  onChange={e => setFicheTechnique(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                  disabled={loadingCatalogues}
+                >
+                  <option value="">Sélectionner une fiche technique</option>
+                  {loadingCatalogues ? (
+                    <option value="" disabled>Chargement...</option>
+                  ) : cataloguesError ? (
+                    <option value="" disabled>Erreur de chargement</option>
+                  ) : catalogues && catalogues.length > 0 ? (
+                    catalogues.map(cat => (
+                      <option key={typeof cat._id === 'object' && '$oid' in cat._id ? cat._id.$oid : cat._id} value={typeof cat._id === 'object' && '$oid' in cat._id ? cat._id.$oid : cat._id}>
+                        {cat.title}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>Aucune fiche technique disponible</option>
+                  )}
+                </select>
+                {cataloguesError && (
+                  <p className="text-red-500 text-sm mt-1">{cataloguesError}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       {/* Section: Attributs */}
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 space-y-4">
         <div className="flex items-center gap-2 mb-2">

@@ -34,7 +34,7 @@ import { Loader2, Plus, Pencil, Trash2, FileText } from 'lucide-react';
 import TiptapEditor from '@/components/TiptapEditor';
 
 interface Catalogue {
-  _id: string;
+  _id: { $oid: string } | string;
   title: string;
   description: string;
   domaine: string;
@@ -375,44 +375,51 @@ export default function AdminCataloguesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {catalogues.map((catalogue) => (
-                  <TableRow key={catalogue._id}>
-                    <TableCell>{catalogue.title}</TableCell>
-                    <TableCell>{catalogue.shortdesc}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setViewingCatalogue(catalogue)}
-                        >
-                          <FiEye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(catalogue)}
-                        >
-                          <FiEdit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(catalogue._id)}
-                        >
-                          <FiTrash2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => router.push(`/api/catalogues/${catalogue._id}/pdf`)}
-                        >
-                          <FiDownload className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {catalogues.map((catalogue) => {
+                  const catalogueId = typeof catalogue._id === 'object' && '$oid' in catalogue._id
+                    ? catalogue._id.$oid
+                    : String(catalogue._id);
+
+                  return (
+                    <TableRow key={catalogueId as string}>
+                      <TableCell>{catalogue.title}</TableCell>
+                      <TableCell>{catalogue.shortdesc}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setViewingCatalogue(catalogue)}
+                          >
+                            <FiEye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(catalogue)}
+                          >
+                            <FiEdit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(catalogueId)}
+                          >
+                            <FiTrash2 className="h-4 w-4" />
+                          </Button>
+                          <a
+                            href={`/api/catalogues/${catalogueId}/pdf`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+                          >
+                            <FiDownload className="h-4 w-4" />
+                          </a>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -420,64 +427,64 @@ export default function AdminCataloguesPage() {
       </Card>
 
       <Dialog open={!!viewingCatalogue} onOpenChange={() => setViewingCatalogue(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
             <DialogTitle>Détails du Catalogue</DialogTitle>
-          </DialogHeader>
-          {viewingCatalogue && (
+              </DialogHeader>
+              {viewingCatalogue && (
             <div className="grid gap-4">
               <div>
                 <h3 className="font-semibold">Titre</h3>
                 <p>{viewingCatalogue.title}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Courte Description</h3>
                 <p>{viewingCatalogue.shortdesc}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Description</h3>
                 <p>{viewingCatalogue.description}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Domaine</h3>
                 <p>{viewingCatalogue.domaine}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Propriétés</h3>
                 <p>{viewingCatalogue.proprietes}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Préparation</h3>
                 <p>{viewingCatalogue.preparation}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Conditions</h3>
                 <p>{viewingCatalogue.conditions}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Application</h3>
                 <p>{viewingCatalogue.application}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Consommation</h3>
                 <p>{viewingCatalogue.consommation}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Nettoyage</h3>
                 <p>{viewingCatalogue.nettoyage}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Stockage</h3>
                 <p>{viewingCatalogue.stockage}</p>
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold">Consignes</h3>
                 <p>{viewingCatalogue.consignes}</p>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
     </div>
   );
 } 

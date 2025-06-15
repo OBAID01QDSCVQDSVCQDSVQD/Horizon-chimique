@@ -3,6 +3,8 @@ import { authConfig } from "@/auth";
 import { Order } from '@/lib/db/models/order.model';
 import Product from '@/lib/db/models/product.model';
 import { connectToDatabase } from '@/lib/db';
+import { formatCurrency } from '@/lib/utils';
+import { PriceDisplay } from '@/components/shared/price-display'
 
 async function getOrdersByUserId(userId: string) {
   await connectToDatabase();
@@ -51,7 +53,9 @@ export default async function OrdersPage() {
               </div>
               <div>
                 <span className="text-gray-500 text-xs dark:text-gray-300">Total:</span>
-                <span className="ml-2 font-bold text-lg text-primary dark:text-yellow-400">${order.totalPrice}</span>
+                <span className="ml-2 font-bold text-lg text-primary dark:text-yellow-400">
+                  <PriceDisplay price={order.totalPrice} />
+                </span>
               </div>
             </div>
             {/* بيانات الشحن */}
@@ -90,7 +94,9 @@ export default async function OrdersPage() {
                           ))
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-300">Price: <span className="font-bold text-primary dark:text-yellow-400">${item.price}</span></div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <PriceDisplay price={item.price} />
+                      </div>
                     </div>
                   </li>
                 ))}

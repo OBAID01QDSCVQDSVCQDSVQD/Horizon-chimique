@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar, FiShield, FiFileText } from 'react-icons/fi'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import ErrorBoundary from '@/components/shared/ErrorBoundary'
 import { Toaster } from 'react-hot-toast'
 import { useSession } from 'next-auth/react'
@@ -62,6 +62,7 @@ export default function AdminLayout({
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const isRedirectingRef = useRef(false); // New ref to track redirect status
 
   useEffect(() => {
     console.log('Session status:', status);
@@ -70,8 +71,14 @@ export default function AdminLayout({
 
     if (status === 'loading') return // Do nothing while loading
 
+    // If already redirecting, prevent further pushes
+    if (isRedirectingRef.current) {
+        return;
+    }
+
     if (!session || session.user?.role?.toLowerCase() !== 'admin') {
       console.log('Redirecting due to no session or non-admin role.');
+      isRedirectingRef.current = true; // Set ref to true before redirecting
       router.push('/') // Redirect to home or login page if not admin
     }
   }, [session, status, router])

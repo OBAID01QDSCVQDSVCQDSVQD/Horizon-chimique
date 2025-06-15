@@ -28,7 +28,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
       // إضافة إعادة التحميل التلقائي
       setTimeout(() => {
         window.location.reload();
-      }, 2000);
+      }, 20000);
 
       return (
         <div className="w-full h-screen flex flex-col items-center justify-center text-center text-red-600">
