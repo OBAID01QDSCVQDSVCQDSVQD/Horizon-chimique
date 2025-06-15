@@ -26,9 +26,9 @@ export default async function HomePage() {
   const bestSellingProducts = await getProductsByTag({ tag: 'best-seller' })
   const cards = [
     {
-      title: 'Categories to explore',
+      title: 'Catégories à explorer',
       link: {
-        text: 'See More',
+        text: 'Voir plus',
         href: '/search',
       },
       items: categories.map((category) => ({
@@ -38,26 +38,26 @@ export default async function HomePage() {
       }))
     },
     {
-      title: 'Explore New Arrivals',
+      title: 'Découvrez les nouveautés',
       items: newArrivals,
       link: {
-        text: 'View All',
+        text: 'Voir tout',
         href: '/search?tag=new-arrival',
       },
     },
     {
-      title: 'Discover Best Sellers',
+      title: 'Meilleures ventes',
       items: bestSellers,
       link: {
-        text: 'View All',
+        text: 'Voir tout',
         href: '/search?tag=new-arrival',
       },
     },
     {
-      title: 'Featured Products',
+      title: 'Produits en vedette',
       items: featureds,
       link: {
-        text: 'Shop Now',
+        text: 'Acheter maintenant',
         href: '/search?tag=new-arrival',
       },
     },
@@ -73,12 +73,12 @@ export default async function HomePage() {
         <HomeCard cards={cards} />
         <Card className='w-full rounded-none'>
           <CardContent className='p-4 items-center gap-3'>
-            <ProductSlider title={"Today's Deals"} products={todaysDeals} />
+            <ProductSlider title={"Offres du jour"} products={todaysDeals} />
           </CardContent>
         </Card>
         <Card className='w-full rounded-none'>
           <CardContent className='p-4 items-center gap-3'>
-            <ProductSlider title={"Best Selling Products"} 
+            <ProductSlider title={"Produits les plus vendus"} 
             products={bestSellingProducts} 
             hideDetails
             />

@@ -3,10 +3,17 @@ import Product from '@/lib/db/models/product.model'
 import ProductCard from '@/components/shared/product/product-card'
 import { Category } from '@/lib/db/models/category.model'
 
-export default async function Page(props: any) {
-  const searchParams = props.searchParams || {};
-  const query = typeof searchParams.q === 'string' ? searchParams.q : '';
-  const category = typeof searchParams.category === 'string' ? searchParams.category : 'All';
+interface SearchPageProps {
+  searchParams: Promise<{
+    q?: string;
+    category?: string;
+  }>
+}
+
+export default async function Page({ searchParams }: SearchPageProps) {
+  const params = await searchParams;
+  const query = params?.q || '';
+  const category = params?.category || 'All';
 
   await connectToDatabase()
 

@@ -22,7 +22,7 @@ export default function Menu() {
           onClick={() => setOpen(true)}
         >
           <MenuIcon className="w-5 h-5" />
-          <span>All</span>
+          <span>Tout</span>
         </button>
         {/* نص Hello واسم المستخدم للجوال */}
         <HelloUser />
@@ -30,7 +30,7 @@ export default function Menu() {
         <nav className="gap-2 items-center h-full hidden md:flex">
           <Link href="#" className="flex items-center gap-1 text-white font-bold px-2 py-1 hover:text-yellow-400 transition h-full">
             <MenuIcon className="w-5 h-5" />
-            <span>All</span>
+            <span>Tout</span>
           </Link>
           {data.headerMenus.map((item) => (
             <Link
@@ -45,7 +45,7 @@ export default function Menu() {
             href="/orders"
             className="text-white hover:text-yellow-400 font-medium px-2 py-1 transition h-full"
           >
-            Returns & Orders
+            Retours & Commandes
           </Link>
         </nav>
       </div>
@@ -79,7 +79,7 @@ export default function Menu() {
                 className="text-white hover:text-yellow-400 font-medium px-2 py-2 rounded transition"
                 onClick={() => setOpen(false)}
               >
-                Returns & Orders
+                Retours & Commandes
               </Link>
             </nav>
           </div>
@@ -107,7 +107,7 @@ function UserButtonMobileIcon() {
       <button
         className="p-2 rounded-full hover:bg-yellow-400/20 text-white"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Account"
+        aria-label="Compte"
         type="button"
       >
         <UserIcon className="w-6 h-6" />
@@ -126,8 +126,7 @@ function HelloUser() {
   const { data: session } = useSession();
   return (
     <div className="md:hidden flex items-center ml-2 text-white font-bold text-sm">
-      Hello{session && session.user?.name ? `, ${session.user.name}` : ''}
-      
+      Bonjour{session && session.user?.name ? `, ${session.user.name}` : ''}
     </div>
   );
 }

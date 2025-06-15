@@ -32,7 +32,7 @@ const statusColors: Record<string, string> = {
 };
 
 const statusOptions = [
-  { value: '', label: 'Toutes les statuts' },
+  { value: '', label: 'Tous les statuts' },
   { value: 'pending', label: 'En attente' },
   { value: 'paid', label: 'Payée' },
   { value: 'shipped', label: 'Expédiée' },
@@ -249,7 +249,7 @@ export default function AdminOrdersPage() {
           onClick={exportToPDF}
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 shadow hover:bg-red-50 dark:hover:bg-red-800 text-red-600 dark:text-red-400 text-sm font-semibold transition cursor-pointer"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 20h9" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
           Exporter PDF
         </button>
       </div>

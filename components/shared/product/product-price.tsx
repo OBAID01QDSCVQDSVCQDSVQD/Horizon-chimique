@@ -38,10 +38,10 @@ const ProductPrice = ({
     <div className='space-y-2'>
       <div className='flex justify-center items-center gap-2'>
         <span className='bg-red-700 rounded-sm p-1 text-white text-sm font-semibold'>
-          {discountPercent}% Off
+          {discountPercent}% de réduction
         </span>
         <span className='text-red-700 text-xs font-bold'>
-          Limited time deal
+          Offre limitée
         </span>
       </div>
       <div className={`flex ${forListing && 'justify-center'} items-center gap-2`}>
@@ -49,7 +49,7 @@ const ProductPrice = ({
           <PriceDisplay price={price} />
         </div>
         <div className='text-muted-foreground text-xs py-2'>
-          Was: <span className='line-through'><PriceDisplay price={listPrice} /></span>
+          Était: <span className='line-through'><PriceDisplay price={listPrice} /></span>
         </div>
       </div>
     </div>
@@ -62,7 +62,7 @@ const ProductPrice = ({
         </div>
       </div>
       <div className='text-muted-foreground text-xs py-2'>
-        List price: <span className='line-through'><PriceDisplay price={listPrice} /></span>
+        Prix catalogue: <span className='line-through'><PriceDisplay price={listPrice} /></span>
       </div>
     </div>
   )

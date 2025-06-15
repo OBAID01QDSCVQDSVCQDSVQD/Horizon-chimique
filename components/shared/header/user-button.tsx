@@ -35,10 +35,10 @@ export default function UserButton({ onClose, isMobileOverlay }: UserButtonProps
           type="button"
         >
           <span className="text-xs">
-            Hello, {session ? session.user?.name || session.user?.email : 'sign in'}
+            Bonjour, {session ? session.user?.name || session.user?.email : 'se connecter'}
           </span>
           <span className="font-bold text-sm flex items-center gap-1">
-            Account & Lists <ChevronDown className="w-4 h-4 inline" />
+            Compte & Listes <ChevronDown className="w-4 h-4 inline" />
           </span>
         </button>
       )}
@@ -62,23 +62,23 @@ export default function UserButton({ onClose, isMobileOverlay }: UserButtonProps
                 <div className="text-xs text-gray-500">{session.user?.email}</div>
               </div>
               <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Mon profil</Link>
-              <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Your orders</Link>
-              <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Returns & Orders</Link>
+              <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Mes commandes</Link>
+              <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Retours & Commandes</Link>
               {session.user?.role === 'Admin' && (
-                <Link href="/admin/overview" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Admin</Link>
+                <Link href="/admin/overview" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Administration</Link>
               )}
               <button
                 onClick={() => { signOut({ callbackUrl: '/' }); handleClose(); }}
                 className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
                 >
-                  Sign out
+                  Se déconnecter
               </button>
             </>
         ) : (
             <>
-              <Link href="/sign-in" className="block px-4 py-2 hover:bg-gray-100 font-bold text-blue-600" onClick={handleClose}>Sign in</Link>
-              <div className="px-4 py-2 text-xs text-gray-500">New Customer?</div>
-              <Link href="/sign-up" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Create your account</Link>
+              <Link href="/sign-in" className="block px-4 py-2 hover:bg-gray-100 font-bold text-blue-600" onClick={handleClose}>Se connecter</Link>
+              <div className="px-4 py-2 text-xs text-gray-500">Nouveau client ?</div>
+              <Link href="/sign-up" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Créer un compte</Link>
             </>
           )}
               </div>
@@ -95,7 +95,7 @@ export function UserButtonMobileIcon() {
       <button
         className="p-2 rounded-full hover:bg-yellow-400/20 text-white"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Account"
+        aria-label="Compte"
         type="button"
       >
         <UserIcon className="w-6 h-6" />
