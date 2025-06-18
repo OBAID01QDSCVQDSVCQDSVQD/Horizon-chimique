@@ -81,11 +81,7 @@ const wrapText = (text: string, font: PDFFont, fontSize: number, maxWidth: numbe
 export async function GET(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
   try {
-    const session = await getServerSession(authConfig);
-    if (!session) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-
+    // إزالة التحقق من authentication للسماح للجميع بتحميل الـ fiche technique
     await connectDB();
     const catalogue = await Catalogue.findById(id);
     if (!catalogue) {

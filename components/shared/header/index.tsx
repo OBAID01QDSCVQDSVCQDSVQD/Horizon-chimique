@@ -30,13 +30,8 @@ export default function Header() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const debouncedSearch = useDebounce(searchQuery, 500);
   const user = null;
-  const [isMounted, setIsMounted] = useState(false);
   const { data: session } = useSession();
   const [categories, setCategories] = useState<{ name: string; slug: string }[]>([]);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     const searchProducts = async () => {
@@ -82,9 +77,7 @@ export default function Header() {
 
   const toggleTheme = () => {
     setDarkMode((prev) => !prev);
-    if (typeof window !== 'undefined') {
-      document.documentElement.classList.toggle('dark');
-    }
+    document.documentElement.classList.toggle('dark');
   };
 
   return (
@@ -287,24 +280,20 @@ export default function Header() {
               )}
             </div>
             <div className="flex items-center gap-3 mb-6">
-              {isMounted && (
-                <>
-                  <button
-                    className="flex items-center gap-1 text-white hover:text-yellow-400 font-bold px-2 py-1 rounded transition border border-gray-600"
-                    onClick={() => setLang(lang === 'EN' ? 'FR' : 'EN')}
-                  >
-                    <FaGlobe />
-                    <span>{lang === 'EN' ? 'FR' : 'EN'}</span>
-                  </button>
-                  <button
-                    className="flex items-center gap-1 text-white hover:text-yellow-400 font-bold px-2 py-1 rounded transition border border-gray-600"
-                    onClick={toggleTheme}
-                  >
-                    {darkMode ? <FaSun /> : <FaMoon />}
-                    <span>{darkMode ? 'Clair' : 'Sombre'}</span>
-                  </button>
-                </>
-              )}
+              <button
+                className="flex items-center gap-1 text-white hover:text-yellow-400 font-bold px-2 py-1 rounded transition border border-gray-600"
+                onClick={() => setLang(lang === 'EN' ? 'FR' : 'EN')}
+              >
+                <FaGlobe />
+                <span>{lang === 'EN' ? 'FR' : 'EN'}</span>
+              </button>
+              <button
+                className="flex items-center gap-1 text-white hover:text-yellow-400 font-bold px-2 py-1 rounded transition border border-gray-600"
+                onClick={toggleTheme}
+              >
+                {darkMode ? <FaSun /> : <FaMoon />}
+                <span>{darkMode ? 'Clair' : 'Sombre'}</span>
+              </button>
             </div>
           </div>
         </div>
