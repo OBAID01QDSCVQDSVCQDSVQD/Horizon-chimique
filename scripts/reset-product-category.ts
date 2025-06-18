@@ -55,7 +55,8 @@ async function resetProductCategories() {
       continue
     }
 
-    product.category = categoryId
+    // Reset categories array with the new category
+    product.categories = [categoryId]
     await product.save()
     console.log(`✅ Updated "${product.name}" → ${categoryName}`)
     updated++

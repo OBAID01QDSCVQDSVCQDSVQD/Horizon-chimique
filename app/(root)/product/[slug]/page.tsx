@@ -16,6 +16,7 @@ import { generateId } from '@/lib/utils'
 import AddToCart from '@/components/shared/product/add-to-cart'
 import { round2 } from '@/lib/utils'
 import ProductDetailsClient from './product-details-client'
+import { getAllAttributes } from '@/lib/db/actions/attribute.actions'
 
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>
@@ -41,15 +42,18 @@ export default async function ProductDetails(props: {
   const { slug } = params
   const product = await getProductBySlug(slug)
 
+  // Fetch all attributes
+  const allAttributes = await getAllAttributes()
+
   const relatedProducts = await getRelatedProductsByCategory({
-    category: product.category,
+    category: product.categories[0]?.toString(),
     productId: product._id,
     page: Number(page || '1'),
   })
 
   return (
     <div>
-      <ProductDetailsClient product={product} relatedProducts={relatedProducts.data} />
+      <ProductDetailsClient product={product} relatedProducts={relatedProducts.data} allAttributes={allAttributes} />
       <section>
         <BrowsingHistoryList className='mt-10' />
       </section>

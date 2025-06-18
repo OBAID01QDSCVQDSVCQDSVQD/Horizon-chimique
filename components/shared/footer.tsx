@@ -26,10 +26,10 @@ export default function Footer() {
           </p>
           <div className="flex gap-3">
             <a href="#" target="_blank" rel="noopener noreferrer">
-              <Image src="/google-play-badge.png" alt="Google Play" width={140} height={40} />
+              <Image src="/google-play-badge.png" alt="Google Play" width={140} height={40} style={{ width: 'auto', height: 'auto' }} />
             </a>
             <a href="#" target="_blank" rel="noopener noreferrer">
-              <Image src="/app-store-dma-apple.png" alt="App Store" width={140} height={40} />
+              <Image src="/app-store-dma-apple.png" alt="App Store" width={140} height={40} style={{ width: 'auto', height: 'auto' }} />
             </a>
           </div>
         </div>

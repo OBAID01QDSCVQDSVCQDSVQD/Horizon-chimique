@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,22 +17,14 @@ interface Product {
   slug: string;
 }
 
-function SearchResults() {
-  const searchParams = useSearchParams();
-  const query = searchParams.get('q');
+export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!query) {
-        setProducts([]);
-        setLoading(false);
-        return;
-      }
-
       try {
-        const response = await fetch(`/api/products?search=${encodeURIComponent(query)}`);
+        const response = await fetch('/api/products');
         if (!response.ok) {
           throw new Error('Failed to fetch products');
         }
@@ -47,7 +38,7 @@ function SearchResults() {
     };
 
     fetchProducts();
-  }, [query]);
+  }, []);
 
   if (loading) {
     return (
@@ -64,14 +55,12 @@ function SearchResults() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">
-          نتائج البحث: {query}
-        </h1>
+        <h1 className="text-3xl font-bold mb-4">جميع المنتجات</h1>
       </div>
 
       {products.length === 0 ? (
         <div className="text-center py-12">
-          <h2 className="text-xl text-gray-600">لا توجد نتائج للبحث</h2>
+          <h2 className="text-xl text-gray-600">لا توجد منتجات</h2>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -101,25 +90,5 @@ function SearchResults() {
         </div>
       )}
     </div>
-  );
-}
-
-function SearchFallback() {
-  return (
-    <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <Skeleton className="h-8 w-64 mb-4" />
-        <Skeleton className="h-4 w-full max-w-2xl" />
-      </div>
-      <ProductSkeleton />
-    </div>
-  );
-}
-
-export default function SearchPage() {
-  return (
-    <Suspense fallback={<SearchFallback />}>
-      <SearchResults />
-    </Suspense>
   );
 } 

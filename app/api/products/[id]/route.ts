@@ -26,11 +26,16 @@ export async function PUT(
     const updateData: any = {
       _id: id,
       name: data.name,
+      slug: data.slug,
+      brand: data.brand,
       price: parseFloat(data.price),
-      category: data.category,
+      listPrice: data.listPrice ? parseFloat(data.listPrice) : undefined,
+      categories: data.categories || [],
       description: data.description || '',
       images: data.images,
-      ficheTechnique: data.ficheTechnique || null
+      ficheTechnique: data.ficheTechnique || null,
+      tags: data.tags,
+      attributes: data.attributes || [],
     }
 
     // Handle stock updates
@@ -56,7 +61,7 @@ export async function PUT(
     }
 
     const updatedProduct = await Product.findById(id)
-      .populate('category', 'name')
+      .populate('categories', 'name')
       .lean()
 
     console.log('Updated product:', updatedProduct)
@@ -93,6 +98,32 @@ export async function DELETE(
     console.error('Error in DELETE /api/products/[id]:', error)
     return NextResponse.json(
       { error: 'Failed to delete product' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(
+  req: NextRequest,
+  context: any
+) {
+  try {
+    await connectToDB()
+    const id = context.params.id
+    const product = await Product.findById(id)
+      .populate('categories', 'name')
+      .populate('variants.options.attributeId', 'name') // Populate attribute details for variants
+      .lean()
+
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(product)
+  } catch (error) {
+    console.error('Error fetching product by ID:', error)
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
       { status: 500 }
     )
   }

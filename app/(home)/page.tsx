@@ -29,7 +29,7 @@ export default async function HomePage() {
       title: 'Catégories à explorer',
       link: {
         text: 'Voir plus',
-        href: '/search',
+        href: '/categories',
       },
       items: categories.map((category) => ({
         name: category.name,

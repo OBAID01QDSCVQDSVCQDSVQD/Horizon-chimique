@@ -9,6 +9,26 @@ const connectToDB = async () => {
   }
 };
 
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    await connectToDB();
+    const { id } = await context.params;
+    
+    const category = await Category.findById(id);
+    if (!category) {
+      return NextResponse.json({ error: 'الفئة غير موجودة' }, { status: 404 });
+    }
+    
+    return NextResponse.json(category);
+  } catch (error) {
+    console.error('Error fetching category:', error);
+    return NextResponse.json(
+      { error: 'خطأ في جلب معلومات الفئة' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     await connectToDB();

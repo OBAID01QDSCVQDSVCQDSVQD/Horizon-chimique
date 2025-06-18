@@ -31,6 +31,7 @@ export default function AddToCart({
 
   function generateCartItemId(item: any) {
     let key = item.product;
+    if (item.variantId) key += `-variant:${item.variantId}`;
     if (item.color) key += `-color:${item.color}`;
     if (item.size) key += `-size:${item.size}`;
     if (item.attributes && Array.isArray(item.attributes)) {

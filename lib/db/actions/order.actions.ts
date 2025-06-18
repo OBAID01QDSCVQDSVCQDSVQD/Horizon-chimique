@@ -63,9 +63,9 @@ export async function createOrderWithShipping(
   // التحقق من توفر الستوك قبل إنشاء الطلب
   const stockValidation = await Promise.all(
     mergedCartItems.map(async (item) => {
-      console.log('Item attributes:', JSON.stringify(item.attributes, null, 2));
+      console.log('DEBUG ORDER: Processing cart item:', JSON.stringify(item, null, 2));
       const product = await Product.findById(item.product).lean();
-      console.log('Product variants:', JSON.stringify(product?.variants, null, 2));
+      console.log('DEBUG ORDER: Product fetched for item:', product?.name, JSON.stringify(product?.variants, null, 2));
       if (!product) {
         return {
           productId: item.product,
@@ -76,18 +76,27 @@ export async function createOrderWithShipping(
       }
 
       if (product.variants && product.variants.length > 0) {
+        console.log('DEBUG ORDER: Product has variants.');
         // التحقق من الستوك للمتغيرات
-        const variant = product.variants.find(v =>
-          v.options.every(opt => {
+        const variant = product.variants.find(v => {
+          console.log('DEBUG ORDER: Checking variant:', JSON.stringify(v, null, 2));
+          const optionsMatch = v.options.every(opt => {
             const attributeName = attributesMap.get(opt.attributeId.toString());
-            return item.attributes.some((itemAttr: any) =>
-              itemAttr.attribute === attributeName && itemAttr.value === opt.value
-            );
-          }) && v.options.length === item.attributes.length
-        );
+            console.log(`DEBUG ORDER: Variant option - ID: ${opt.attributeId}, Value: ${opt.value}, Resolved Name: ${attributeName}`);
+            
+            const itemAttributeMatch = item.attributes.some((itemAttr: any) => {
+              console.log(`DEBUG ORDER: Comparing - ItemAttr: {name: ${itemAttr.attribute}, value: ${itemAttr.value}} with VariantOpt: {name: ${attributeName}, value: ${opt.value}}`);
+              return itemAttr.attribute === attributeName && itemAttr.value.trim() === opt.value.trim();
+            });
+            console.log(`DEBUG ORDER: Item attribute match for current option: ${itemAttributeMatch}`);
+            return itemAttributeMatch;
+          });
+          console.log(`DEBUG ORDER: All options match for variant: ${optionsMatch}. Variant options length: ${v.options.length}, Item attributes length: ${item.attributes.length}`);
+          return optionsMatch && v.options.length === item.attributes.length;
+        });
 
         if (!variant) {
-          console.log('No matching variant found');
+          console.log('DEBUG ORDER: No matching variant found for item.');
           return {
             productId: item.product,
             name: item.name,
@@ -97,6 +106,7 @@ export async function createOrderWithShipping(
         }
 
         if (variant.stock < item.quantity) {
+          console.log(`DEBUG ORDER: Insufficient stock for variant. Available: ${variant.stock}, Requested: ${item.quantity}`);
           return {
             productId: item.product,
             name: item.name,
@@ -105,8 +115,10 @@ export async function createOrderWithShipping(
           };
         }
       } else {
+        console.log('DEBUG ORDER: Product has no variants. Checking main stock.');
         // التحقق من الستوك الرئيسي
         if (product.countInStock < item.quantity) {
+          console.log(`DEBUG ORDER: Insufficient main stock. Available: ${product.countInStock}, Requested: ${item.quantity}`);
           return {
             productId: item.product,
             name: item.name,
@@ -136,7 +148,7 @@ export async function createOrderWithShipping(
   // جلب بيانات المنتج لكل عنصر
   const cartItemsWithDetails = await Promise.all(
     mergedCartItems.map(async (item) => {
-      const product = await Product.findById(item.product).lean();
+      const product = await Product.findById(item.product).populate('categories');
       if (!product) return item;
       let variantDetails = {};
       if (product.variants && product.variants.length > 0 && item.attributes && item.attributes.length > 0) {
@@ -145,7 +157,7 @@ export async function createOrderWithShipping(
             const attributeName = attributesMap.get(opt.attributeId.toString());
             if (!attributeName) return false;
             return item.attributes.some((itemAttr: any) =>
-              itemAttr.attribute === attributeName && itemAttr.value === opt.value
+              itemAttr.attribute === attributeName && itemAttr.value.trim() === opt.value.trim()
             );
           })
         );
@@ -166,7 +178,7 @@ export async function createOrderWithShipping(
         name: product.name || '',
         image: Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : '',
         slug: product.slug || '',
-        category: product.category ? (product.category.name || product.category.toString()) : '',
+        category: product.categories && product.categories.length > 0 ? (product.categories[0] as any).name || product.categories[0].toString() : '',
         brand: product.brand || '',
         attributes: item.attributes || [],
         ...variantDetails,
@@ -189,7 +201,7 @@ export async function createOrderWithShipping(
           if (!attributeName) return false;
           
           return item.attributes.some((itemAttr: any) => 
-            itemAttr.attribute === attributeName && itemAttr.value === opt.value
+            itemAttr.attribute === attributeName && itemAttr.value.trim() === opt.value.trim()
           );
         })
       );

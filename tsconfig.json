@@ -29,7 +29,7 @@
       ]
     },
     "types": [
-      "next-auth"
+      // "next-auth" // Removed to test for type conflict
     ]
   },
   "include": [

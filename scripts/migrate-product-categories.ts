@@ -10,7 +10,7 @@ const categorySchema = new mongoose.Schema({
 });
 const productSchema = new mongoose.Schema({
   name: String,
-  category: mongoose.Schema.Types.Mixed, // قد يكون string أو ObjectId
+  categories: [mongoose.Schema.Types.Mixed], // مصفوفة قد تحتوي على string أو ObjectId
   // ... باقي الحقول حسب مشروعك
 });
 
@@ -22,14 +22,29 @@ async function migrateCategories() {
 
   const products = await Product.find({});
   for (const product of products) {
-    if (typeof product.category === 'string') {
-      const cat = await Category.findOne({ name: product.category });
-      if (cat) {
-        product.category = cat._id;
+    if (product.categories && Array.isArray(product.categories)) {
+      let needsUpdate = false;
+      const newCategories = [];
+      
+      for (const category of product.categories) {
+        if (typeof category === 'string') {
+          const cat = await Category.findOne({ name: category });
+          if (cat) {
+            newCategories.push(cat._id);
+            console.log(`Migrated product ${product.name} category "${category}" to ObjectId`);
+            needsUpdate = true;
+          } else {
+            console.log(`Category not found for product ${product.name}: ${category}`);
+            newCategories.push(category); // Keep original if not found
+          }
+        } else {
+          newCategories.push(category); // Keep ObjectId as is
+        }
+      }
+      
+      if (needsUpdate) {
+        product.categories = newCategories;
         await product.save();
-        console.log(`Migrated product ${product.name} to category ${cat.name}`);
-      } else {
-        console.log(`Category not found for product ${product.name}: ${product.category}`);
       }
     }
   }

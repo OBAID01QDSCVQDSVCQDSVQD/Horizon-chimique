@@ -12,16 +12,25 @@ async function checkProductCategories() {
   let invalidCount = 0
 
   for (const product of products) {
-    if (!isValidObjectId(product.category)) {
-      console.warn(`❌ Invalid category in "${product.name}" → ${product.category}`)
+    // Check if categories array exists and has valid ObjectIds
+    if (!product.categories || !Array.isArray(product.categories)) {
+      console.warn(`❌ Missing or invalid categories array in "${product.name}"`)
       invalidCount++
+    } else {
+      // Check each category ID in the array
+      for (const categoryId of product.categories) {
+        if (!isValidObjectId(categoryId)) {
+          console.warn(`❌ Invalid category ID in "${product.name}" → ${categoryId}`)
+          invalidCount++
+        }
+      }
     }
   }
 
   if (invalidCount === 0) {
     console.log('✅ All products have valid category ObjectIds.')
   } else {
-    console.log(`🚨 Found ${invalidCount} product(s) with invalid category.`)
+    console.log(`🚨 Found ${invalidCount} product(s) with invalid categories.`)
   }
 
   process.exit(0)

@@ -1,7 +1,7 @@
 export const runtime = 'nodejs'
 
 import NextAuth from 'next-auth'
-import { authConfig } from '@/auth'
+import { authConfig } from '@/lib/working-auth'
 
 const handler = NextAuth(authConfig)
 

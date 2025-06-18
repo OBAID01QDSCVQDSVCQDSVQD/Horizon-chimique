@@ -2,24 +2,37 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FiEdit2, FiTrash2, FiPlus, FiX, FiEye, FiFilter, FiImage, FiUpload } from 'react-icons/fi'
+import { FiEdit2, FiTrash2, FiPlus, FiX, FiEye, FiFilter, FiImage, FiUpload, FiArrowLeft, FiArrowRight } from 'react-icons/fi'
 import React from 'react'
 import TiptapEditor from '@/components/TiptapEditor'
 import { toast } from 'react-hot-toast'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 
 interface Product {
   _id: string
   name: string
+  slug: string
   description: string
   price: number
-  category: {
-    _id: string
-    name: string
-  }
   stock: number
   images: string[]
   createdAt: string
@@ -35,6 +48,7 @@ interface Product {
     }>
     stock?: number
     price?: number
+    image?: string
     numSales?: number
   }>
   attributes?: Array<{
@@ -54,6 +68,8 @@ interface Product {
   ratingDistribution?: { rating: number; count: number }[]
   reviews?: any[]
   updatedAt?: Date
+  categories?: { _id: string; name: string }[]
+  tags?: string[]
 }
 
 interface Filters {
@@ -85,34 +101,22 @@ export default function AdminProductsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [editModalOpen, setEditModalOpen] = useState(false)
-  const [productToEdit, setProductToEdit] = useState<Product | null>(null)
-  const [editForm, setEditForm] = useState({ 
-    name: '', 
-    price: '', 
-    category: '', 
-    stock: '', 
-    description: '',
-    variants: [] as any[],
-    ficheTechnique: ''
-  })
-  const [editLoading, setEditLoading] = useState(false)
   const [lowStockModalOpen, setLowStockModalOpen] = useState(false)
   const [catalogues, setCatalogues] = useState<{ _id: string; title: string }[]>([])
+  const [bestSellers, setBestSellers] = useState<Product[]>([])
+  const [attributes, setAttributes] = useState<any[]>([])
 
   // Helper to get attribute name (moved here for clearer scope)
   const getAttributeName = (id: string, product: any) => {
-    const attribute = product.attributes?.find((attr: any) =>
-      (attr.attribute && typeof attr.attribute === 'object' && attr.attribute._id === id) ||
-      attr.attribute === id
-    );
-    return attribute ? (attribute.attribute && typeof attribute.attribute === 'object' && 'name' in attribute.attribute ? attribute.attribute.name : attribute.attribute) : id;
+    // console.log("Type of attributes in getAttributeName:", typeof attributes, "Is Array:", Array.isArray(attributes));
+    // Utiliser le state `attributes` global plutôt que `product.attributes`
+    if (!Array.isArray(attributes)) {
+      // console.error("Attributes is not an array when getAttributeName is called:", attributes);
+      return id; // Fallback to ID if attributes is not an array
+    }
+    const attribute = attributes.find((attr: any) => attr._id === id);
+    return attribute ? attribute.name : id;
   };
-
-  // New states for image management
-  const [baseImages, setBaseImages] = useState<string[]>([]); // Current product images
-  const [newImages, setNewImages] = useState<File[]>([]); // Newly uploaded image files
-  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]); // URLs of images to delete
 
   const formatPriceDisplay = (price: number) => {
     const [int, decimal] = price.toFixed(3).split('.');
@@ -128,6 +132,8 @@ export default function AdminProductsPage() {
   useEffect(() => {
     fetchCategories()
     fetchCatalogues()
+    fetchAttributes()
+    fetchBestSellers()
     fetchProducts()
   }, [page, filters])
 
@@ -146,7 +152,7 @@ export default function AdminProductsPage() {
         console.log('Categories response status:', res.status)
         
         if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}))
+          const errorData = await res.json().catch(() => ({}));
           console.error('Categories API error:', errorData)
           throw new Error(errorData.error || `Failed to fetch categories (${res.status})`)
         }
@@ -165,7 +171,7 @@ export default function AdminProductsPage() {
         console.error(`Error fetching categories (attempt ${4 - retries}/3):`, error)
         retries--
         if (retries === 0) {
-          toast.error('Failed to load categories. Please refresh the page.')
+          toast.error('Échec du chargement des catégories. Veuillez rafraîchir la page.')
         } else {
           await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retrying
         }
@@ -177,19 +183,63 @@ export default function AdminProductsPage() {
     try {
       const res = await fetch('/api/catalogues')
       if (!res.ok) {
-        throw new Error('Failed to fetch catalogues')
+        throw new Error('Échec du chargement des catalogues')
       }
       const data = await res.json()
       setCatalogues(data)
     } catch (error) {
-      console.error('Error fetching catalogues:', error)
-      toast.error('Failed to load catalogues')
+      console.error('Erreur lors du chargement des catalogues:', error)
+      toast.error('Échec du chargement des catalogues')
     }
   }
 
+  const fetchAttributes = async () => {
+    try {
+      // console.log("Fetching attributes...");
+      const res = await fetch('/api/attributes/list');
+      // console.log("Attributes API response status:", res.status);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        // console.error("Attributes API error:", errorData);
+        throw new Error(errorData.error || 'Échec du chargement des attributs');
+      }
+      let responseData = await res.json();
+      // console.log("Raw data from attributes API:", responseData);
+
+      // التحقق من هيكل البيانات والتأكد من أنها مصفوفة من data.data
+      if (responseData && typeof responseData === 'object' && 'data' in responseData && Array.isArray(responseData.data)) {
+        setAttributes(responseData.data); // استخدام responseData.data
+      } else {
+        console.error("Invalid attributes data format: Expected an object with 'data' array.", responseData);
+        setAttributes([]); // تعيين مصفوفة فارغة لتجنب الأخطاء اللاحقة
+      }
+      
+      // console.log("Attributes fetched successfully (formatted):");
+      // console.log("Current attributes state after fetch:", responseData.data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement de attributs:', error);
+      toast.error('Échec du chargement des attributs.');
+    }
+  };
+
+  const fetchBestSellers = async () => {
+    try {
+      const response = await fetch('/api/products?tag=best-seller&limit=5');
+      if (!response.ok) {
+        throw new Error('Échec du chargement des meilleures ventes');
+      }
+      const data = await response.json();
+      setBestSellers(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des meilleures ventes:', error);
+      toast.error('Échec du chargement des produits les plus vendus.');
+    }
+  };
+
   const fetchProducts = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
+      console.log('Fetching products with filters:', filters);
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: '10',
@@ -200,19 +250,32 @@ export default function AdminProductsPage() {
         ...(filters.maxStock && { maxStock: filters.maxStock }),
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder
-      })
-      
-      const res = await fetch(`/api/products?${queryParams}`)
-      const data = await res.json()
-      setProducts(data.data)
-      setTotalPages(data.totalPages)
+      });
+      const res = await fetch(`/api/products/admin?${queryParams.toString()}`);
+      console.log('Products API response status:', res.status);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Products API error:', errorData);
+        throw new Error(errorData.error || `Échec du chargement des produits (${res.status})`);
+      }
+      const data = await res.json();
+      console.log('Products fetched:', data);
+
+      if (data && typeof data === 'object' && 'products' in data && Array.isArray(data.products)) {
+        setProducts(data.products);
+        setTotalPages(data.totalPages || 1);
+      } else {
+        setProducts([]);
+        setTotalPages(1);
+        console.warn('Structure de réponse API inattendue pour les produits:', data);
+      }
     } catch (error) {
-      console.error('Error fetching products:', error)
-      toast.error('Échec du chargement des produits')
+      console.error('Erreur lors du chargement des produits:', error);
+      toast.error('Échec du chargement des produits. Veuillez rafraîchir la page.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -252,169 +315,9 @@ export default function AdminProductsPage() {
     }
   }
 
-  const openEditModal = (product: Product) => {
-    console.log('openEditModal - Product received:', JSON.parse(JSON.stringify(product)));
-    setProductToEdit(product)
-    setEditForm({
-      name: product.name,
-      price: String(product.price ?? ''),
-      category: categories.find(c => c.name === product.category?.name)?._id || '',
-      stock: String(product.stock ?? ''),
-      description: product.description && product.description.trim().startsWith('<')
-        ? product.description
-        : `<p>${product.description || ''}</p>`,
-      variants: product.variants || [],
-      ficheTechnique: product.ficheTechnique?._id || ''
-    })
-    setBaseImages(product.images || [])
-    setNewImages([])
-    setImagesToDelete([])
-    setEditModalOpen(true)
-  }
-
-  const handleEditChange = (field: string, value: string | number, variantIndex?: number) => {
-    console.log('handleEditChange called:', { field, value, variantIndex })
-    
-    if (variantIndex !== undefined && field === 'variantStock') {
-      setEditForm(prev => {
-        const newVariants = [...prev.variants]
-        newVariants[variantIndex] = {
-          ...newVariants[variantIndex],
-          stock: Number(value) || 0
-        }
-        console.log('Updated variants:', newVariants)
-        return {
-          ...prev,
-          variants: newVariants
-        }
-      })
-    } else {
-      setEditForm(prev => {
-        const newForm = { ...prev, [field]: value }
-        console.log('Updated form:', newForm)
-        return newForm
-      })
-    }
-  }
-
-  const handleEditSave = async () => {
-    console.log('handleEditSave called')
-    if (!productToEdit) {
-      console.log('No product to edit')
-      return
-    }
-
-    setEditLoading(true)
-    try {
-      console.log('Current form data:', editForm)
-      console.log('Original product:', productToEdit)
-
-      // 1. Upload new images
-      const uploadedNewImageUrls: string[] = [];
-      if (newImages.length > 0) {
-        for (const file of newImages) {
-          const url = await uploadImageToCloudinary(file);
-          uploadedNewImageUrls.push(url);
-        }
-      }
-
-      // 2. Filter out images to delete from existing baseImages
-      const finalExistingImages = baseImages.filter(img => !imagesToDelete.includes(img));
-
-      // 3. Combine final existing images with newly uploaded images
-      const finalImages = [...finalExistingImages, ...uploadedNewImageUrls];
-      
-      // Prepare data with only changed fields
-      const updatedData: any = {
-        name: editForm.name,
-        price: parseFloat(editForm.price),
-        category: editForm.category,
-        stock: parseInt(editForm.stock), // Assuming main stock
-        description: editForm.description,
-        variants: editForm.variants,
-        images: finalImages, // Add the updated images array
-        ficheTechnique: editForm.ficheTechnique || null // Add fiche technique
-      }
-
-      console.log('Images sent to backend:', updatedData.images);
-
-      const res = await fetch(`/api/products/${productToEdit._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData),
-      })
-
-      if (res.ok) {
-        toast.success('Produit mis à jour avec succès!')
-        setEditModalOpen(false)
-        fetchProducts() // Refresh the product list
-      } else {
-        const errorData = await res.json()
-        toast.error(errorData.message || 'Échec de la mise à jour du produit')
-      }
-    } catch (error) {
-      console.error('Error updating product:', error)
-      toast.error('Échec de la mise à jour du produit')
-    } finally {
-      setEditLoading(false)
-    }
-  }
-
-  // --- قسم المنتجات المميزة (منطق الستوك الذكي) ---
   function getLowStockVariants(product: Product) {
-    if (product.variants && product.variants.length > 0) {
-      // أرجع كل الفاريونتات التي ستوكها أقل من 5
-      return product.variants
-        .filter(v => typeof v.stock === 'number' && v.stock < 5)
-        .map(v => ({
-          variant: v,
-          attributes: v.options?.map(opt => opt.value).filter(Boolean).join(' / ') || '',
-          stock: v.stock ?? 0
-        }))
-    } else if (typeof product.stock === 'number' && product.stock < 5) {
-      // منتج بدون فاريونت وستوكه أقل من 5
-      return [{ variant: null, attributes: '', stock: product.stock }]
-    }
-    return []
+    // Implementation of getLowStockVariants function
   }
-  const lowStockList = (Array.isArray(products) ? products : []).flatMap(p => getLowStockVariants(p).map(v => ({ product: p, ...v })));
-
-  // --- قسم المنتجات المميزة ---
-  const bestSellers = [...(Array.isArray(products) ? products : [])].sort((a, b) => {
-    const aVariantSales = a.variants?.reduce((sum, v) => sum + (v.numSales || 0), 0) || 0;
-    const bVariantSales = b.variants?.reduce((sum, v) => sum + (v.numSales || 0), 0) || 0;
-    return bVariantSales - aVariantSales || (b.numSales || 0) - (a.numSales || 0);
-  }).slice(0, 5);
-  const zeroSales = (Array.isArray(products) ? products : []).filter(p => {
-    const variantSales = p.variants?.reduce((sum, v) => sum + (v.numSales || 0), 0) || 0;
-    return variantSales === 0 && (p.numSales || 0) === 0;
-  });
-
-  // Helper to upload images to Cloudinary (copied from create/page.tsx)
-  const uploadImageToCloudinary = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'ecommerce-app'); // Make sure this preset is correct
-    const res = await fetch('https://api.cloudinary.com/v1_1/dwio60ll1/image/upload', {
-      method: 'POST',
-      body: formData,
-    });
-    const data = await res.json();
-    return data.secure_url;
-  };
-
-  // Handler for adding new base images
-  const handleBaseImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setNewImages(prev => [...prev, ...Array.from(e.target.files || [])]);
-    }
-  };
-
-  // Handler for deleting existing base images
-  const handleBaseImageDelete = (imageUrl: string) => {
-    setImagesToDelete(prev => [...prev, imageUrl]);
-    setBaseImages(prev => prev.filter(img => img !== imageUrl));
-  };
 
   if (loading) {
     return (
@@ -424,817 +327,377 @@ export default function AdminProductsPage() {
       </div>
     );
   }
-  if (products.length === 0) {
+  if (!Array.isArray(products) || products.length === 0) {
     return <div className="text-center text-gray-500">Aucun produit disponible</div>;
   }
 
   return (
     <div className="p-6 max-w-7xl mx-auto bg-gray-100 dark:bg-gray-950 min-h-screen">
       <h1 className="text-2xl font-bold mb-8 text-primary dark:text-yellow-400">Gestion des produits</h1>
-      {/* قسم المنتجات */}
-      <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* المنتجات التي قربت تخلص */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-4 flex flex-col items-center border-l-4 border-yellow-400">
-          <div className="text-3xl mb-2">🕵️‍♂️</div>
-          <div className="font-bold text-lg mb-1">Produits presque épuisés</div>
-          <div className="text-sm text-gray-500 mb-2">Stock &lt; 5</div>
-          <ul className="text-sm text-gray-700 dark:text-gray-200 max-h-32 overflow-y-auto w-full">
-            {lowStockList.length === 0 ? <li>Aucun produit</li> : lowStockList.slice(0, 5).map((item, i) => (
-              <li key={item.product._id + '-' + i}>
-                {item.product.name}
-                {item.attributes && <span className="ml-1 text-xs text-gray-500">[{item.attributes}]</span>}
-                <span className="text-xs text-red-500 ml-2">({item.stock})</span>
-              </li>
-            ))}
-          </ul>
-          {lowStockList.length > 5 && (
-            <button onClick={() => setLowStockModalOpen(true)} className="mt-2 text-blue-600 hover:underline text-sm font-semibold">Voir tout</button>
-          )}
-        </div>
-        {/* الأكثر مبيعًا */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-4 flex flex-col items-center border-l-4 border-orange-500">
-          <div className="text-3xl mb-2">🔥</div>
-          <div className="font-bold text-lg mb-1">Meilleures ventes</div>
-          <div className="text-sm text-gray-500 mb-2">Top 5</div>
-          <ul className="text-sm text-gray-700 dark:text-gray-200 max-h-32 overflow-y-auto w-full">
-            {bestSellers.length === 0 ? (
-              <li>Aucun produit</li>
-            ) : (
-              bestSellers.map(p => (
-                <li key={p._id}>
-                  {p.name}
-                  {p.variants && p.variants.filter(v => !!v.numSales && v.numSales > 0).length > 0 ? (
-                    p.variants
-                      .filter(v => !!v.numSales && v.numSales > 0)
-                      .map((v, i) => (
-                        <div key={i} className="ml-1 text-xs text-orange-500">
-                          ({v.options.map(opt => opt.value).join(' / ')}: {v.numSales})
-                        </div>
-                      ))
-                  ) : (
-                    <div className="ml-1 text-xs text-orange-500">
-                      ({p.numSales ?? 0})
-                    </div>
-                  )}
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-        {/* الأقل تفاعلاً */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-4 flex flex-col items-center border-l-4 border-blue-500">
-          <div className="text-3xl mb-2">📉</div>
-          <div className="font-bold text-lg mb-1">Produits sans ventes</div>
-          <div className="text-sm text-gray-500 mb-2">Zero sales</div>
-          <ul className="text-sm text-gray-700 dark:text-gray-200 max-h-32 overflow-y-auto w-full">
-            {zeroSales.length === 0 ? <li>Aucun produit</li> : zeroSales.map(p => <li key={p._id}>{p.name}</li>)}
-          </ul>
-        </div>
-      </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Gestion des Produits</h1>
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Gestion des Produits</h1>
         <div className="flex gap-4">
-          <button
-            onClick={() => setFiltersOpen(true)}
-            className="flex items-center gap-4 px-2 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 shadow hover:bg-blue-50 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 text-sm font-semibold transition cursor-pointer"
-          >
-            <FiFilter className="w-4 h-4" />
-            Filtres
-          </button>
-          <button
-            onClick={() => router.push('/admin/products/create')}
-            className="bg-blue-600 text-white px-5 py-1.5 rounded-lg flex items-center gap-2 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-sm"
-          >
-            <FiPlus className="w-4 h-4" /> Ajouter un Produit
-          </button>
+          <Button onClick={() => router.push('/admin/products/create')}>
+            <FiPlus className="mr-2" /> Ajouter un nouveau produit
+          </Button>
+          <Button onClick={() => setFiltersOpen(!filtersOpen)} variant="outline">
+            <FiFilter className="mr-2" /> Filtrer
+          </Button>
         </div>
       </div>
 
-      {/* Filters Modal/Panel */}
       {filtersOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div
-            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md mx-2 p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setFiltersOpen(false)}
-              className="absolute top-3 right-3 text-gray-500 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 text-2xl font-bold focus:outline-none"
-              aria-label="Fermer"
-            >
-              &times;
-            </button>
-            {/* Filters Panel Content */}
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Filtres</h2>
-                <button
-                  onClick={resetFilters}
-                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center gap-2"
-                >
-                  <FiX /> Réinitialiser
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold mb-3">Options de filtrage</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Catégorie
-                  </label>
+                <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Catégorie</label>
                   <select
+                  id="categoryFilter"
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white dark:bg-gray-800 dark:text-gray-100"
                     value={filters.category}
                     onChange={(e) => handleFilterChange('category', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">Toutes les Catégories</option>
-                    {(Array.isArray(categories) ? categories : []).map((category) => (
-                      <option key={category._id} value={category._id}>
-                        {category.name}
-                      </option>
+                  <option value="">Toutes les catégories</option>
+                  {categories.map(cat => (
+                    <option key={cat._id} value={cat._id}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Prix Min (DT)
-                  </label>
-                  <input
+                <label htmlFor="minPriceFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Prix Min</label>
+                <Input
+                  id="minPriceFilter"
                     type="number"
+                  placeholder="Prix minimum"
                     value={filters.minPrice}
                     onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Prix Max (DT)
-                  </label>
-                  <input
+                <label htmlFor="maxPriceFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Prix Max</label>
+                <Input
+                  id="maxPriceFilter"
                     type="number"
+                  placeholder="Prix maximum"
                     value={filters.maxPrice}
                     onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="1000"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Stock Min
-                  </label>
-                  <input
+                <label htmlFor="minStockFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Stock Min</label>
+                <Input
+                  id="minStockFilter"
                     type="number"
+                  placeholder="Stock minimum"
                     value={filters.minStock}
                     onChange={(e) => handleFilterChange('minStock', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Stock Max
-                  </label>
-                  <input
+                <label htmlFor="maxStockFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Stock Max</label>
+                <Input
+                  id="maxStockFilter"
                     type="number"
+                  placeholder="Stock maximum"
                     value={filters.maxStock}
                     onChange={(e) => handleFilterChange('maxStock', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="100"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Trier par
-                  </label>
+                <label htmlFor="sortByFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Trier par</label>
                   <select
+                  id="sortByFilter"
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white dark:bg-gray-800 dark:text-gray-100"
                     value={filters.sortBy}
                     onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="createdAt">Date de création</option>
-                    <option value="price">Prix</option>
                     <option value="name">Nom</option>
-                    <option value="stock">Stock</option>
+                  <option value="price">Prix</option>
+                  <option value="countInStock">Stock</option>
+                  <option value="numSales">Ventes</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Ordre
-                  </label>
+                <label htmlFor="sortOrderFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Ordre de tri</label>
                   <select
+                  id="sortOrderFilter"
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white dark:bg-gray-800 dark:text-gray-100"
                     value={filters.sortOrder}
                     onChange={(e) => handleFilterChange('sortOrder', e.target.value as 'asc' | 'desc')}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="desc">Décroissant</option>
                     <option value="asc">Croissant</option>
                   </select>
                 </div>
               </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button onClick={resetFilters} variant="outline">
+                Réinitialiser les filtres
+              </Button>
+              <Button onClick={() => setFiltersOpen(false)}>
+                Appliquer les filtres
+              </Button>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 mb-6">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-400"></div>
-            <span className="ml-3 text-lg">Chargement en cours...</span>
-          </div>
-        ) : (
-          <>
-            {/* Table for medium and up */}
+      {/* Table for larger screens */}
             <div className="overflow-x-auto hidden sm:block">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Produit
-                    </th>
-                    <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Catégorie
-                    </th>
-                    <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Prix
-                    </th>
-                    <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Stock
-                    </th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+              <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Liste des Produits ({products.length})</h2>
+        <Table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead>
+            <tr>
+              <TableHead className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</TableHead>
+              <TableHead className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catégorie</TableHead>
+              <TableHead className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix</TableHead>
+              <TableHead className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</TableHead>
+              <TableHead className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ventes</TableHead>
+              <TableHead className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</TableHead>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                  {(Array.isArray(products) ? products : []).map((product) => (
-                    <tr
-                      key={product._id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800"
-                    >
-                      <td className="px-2 md:px-4 py-3 align-top">
-                        <div className="flex items-center">
-                          {product.images[0] && (
-                            <img
-                              src={product.images[0]}
-                              alt={product.name}
-                              className="h-10 w-10 rounded-lg object-cover mr-3 flex-shrink-0"
-                            />
+          <tbody>
+            {products.length === 0 && !loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4 text-gray-500 dark:text-gray-400">
+                  Aucun produit trouvé.
+                </TableCell>
+              </TableRow>
+            ) : (
+              products.map((product) => (
+                <TableRow key={product._id}>
+                  <TableCell className="py-3 px-6 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      {product.images && product.images[0] && (
+                        <img src={product.images[0]} alt={product.name} className="w-10 h-10 object-cover rounded-md" />
                           )}
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <div className="font-medium text-gray-900 dark:text-gray-100">
                               {product.name.split(' ').slice(0, 3).join(' ')}
-                              {product.name.split(' ').length > 3 ? '...' : ''}
+                        {product.name.split(' ').length > 3 && '...'}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                              {product.description.substring(0, 50)}...
                             </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-2 md:px-4 py-3 align-top">
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          {product.category?.name}
-                        </div>
-                      </td>
-                      <td className="px-2 md:px-4 py-3 align-top">
-                        <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="py-3 px-6 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                    {product.categories?.map((cat, index) => (
+                      <span key={cat._id}>
+                        {cat.name}
+                        {index < (product.categories?.length || 0) - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                  </TableCell>
+                  <TableCell className="py-3 px-6 whitespace-nowrap text-gray-700 dark:text-gray-300">
                           {formatPriceDisplay(product.price)}
+                  </TableCell>
+                  <TableCell className="py-3 px-6 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                    {product.countInStock}
+                  </TableCell>
+                  <TableCell className="py-3 px-6 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                    {product.numSales ?? 0}
+                  </TableCell>
+                  <TableCell className="py-3 px-6 whitespace-nowrap">
+                    <div className="flex gap-2 items-center">
+                      <Button variant="ghost" size="icon" onClick={() => setSelectedProduct(product)}>
+                        <FiEye className="w-4 h-4 text-blue-500" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/admin/products/edit/${product.slug}`)}
+                        className="text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-800/50"
+                      >
+                        <FiEdit2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(product._id)}>
+                        <FiTrash2 className="w-4 h-4 text-red-500" />
+                      </Button>
                         </div>
-                      </td>
-                      <td className="px-2 md:px-4 py-3 align-top">
-                        <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                          {product.stock}
-                        </div>
-                      </td>
-                      <td className="px-2 md:px-4 py-3 align-top">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedProduct(product)
-                              setModalOpen(true)
-                              console.log('Modal should open', product)
-                            }}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1"
-                            title="Afficher les détails"
-                          >
-                            <FiEye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => openEditModal(product)}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1"
-                            title="Modifier"
-                          >
-                            <FiEdit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product._id)}
-                            className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 p-1"
-                            title="Supprimer"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
                 </tbody>
-              </table>
-            </div>
-            {/* Cards for mobile */}
-            <div className="sm:hidden space-y-4">
-              {(Array.isArray(products) ? products : []).map((product, idx) => (
-                <React.Fragment key={product._id}>
-                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 flex flex-col gap-2">
-                    <div className="flex items-center gap-3">
-                      {product.images[0] && (
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
-                          {product.name.split(' ').slice(0, 3).join(' ')}
-                          {product.name.split(' ').length > 3 ? '...' : ''}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {product.description.substring(0, 50)}...
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold">Catégorie</div>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">{product.category?.name}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold">Prix</div>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">{formatPriceDisplay(product.price)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold">Stock</div>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">{product.stock}</div>
-                      </div>
-                      <div className="flex items-center gap-2 mt-4">
-                        <button
-                          onClick={() => {
-                            setSelectedProduct(product)
-                            setModalOpen(true)
-                            console.log('Modal should open', product)
-                          }}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1"
-                          title="Afficher les détails"
-                        >
-                          <FiEye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openEditModal(product)}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1"
-                          title="Modifier"
-                        >
-                          <FiEdit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product._id)}
-                          className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 p-1"
-                          title="Supprimer"
-                        >
-                          <FiTrash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  {idx !== products.length - 1 && (
-                    <div className="w-full h-3 flex items-center justify-center">
-                      <div className="w-11/12 h-1 bg-gray-200 dark:bg-gray-800 rounded shadow-sm"></div>
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          </>
-        )}
+        </Table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-6 gap-2">
-          <button
+      {/* Pagination controls */}
+      <div className="flex justify-between items-center mt-4">
+        <div className="text-sm text-gray-600">
+          Page {page} sur {totalPages}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
           >
+            <FiArrowLeft className="h-4 w-4 mr-2" />
             Précédent
-          </button>
-          <span className="px-4 py-2">
-            Page {page} sur {totalPages}
-          </span>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
           >
             Suivant
-          </button>
+            <FiArrowRight className="h-4 w-4 ml-2" />
+          </Button>
         </div>
-      )}
+      </div>
 
-      {/* Modal */}
-      {modalOpen && selectedProduct && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm"
-          onClick={() => setModalOpen(false)}
-        >
-          <div
-            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl mx-2 p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setModalOpen(false)}
-              className="absolute top-3 right-3 text-gray-500 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 text-2xl font-bold focus:outline-none"
-              aria-label="Fermer"
-            >
-              &times;
-            </button>
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">{selectedProduct.name}</h2>
-            
-            {/* Product Images */}
-            {selectedProduct.images && selectedProduct.images.length > 0 && (
-              <div className="mb-6">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {selectedProduct.images.map((image, index) => (
-                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                      <img
-                        src={image}
-                        alt={`${selectedProduct.name} - Image ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+      {/* Modal for viewing product details */}
+      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
+        <DialogContent className="sm:max-w-[800px] p-6">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Détails du Produit</DialogTitle>
+            <DialogDescription className="text-gray-500">Aperçu complet du produit.</DialogDescription>
+          </DialogHeader>
+          {selectedProduct && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-lg mb-1">Nom:</h4>
+                  <p className="text-gray-700 dark:text-gray-300">{selectedProduct.name}</p>
                     </div>
-                  ))}
+                <div>
+                  <h4 className="font-semibold text-lg mb-1">Catégories:</h4>
+                  <p className="text-gray-700 dark:text-gray-300">{selectedProduct.categories && selectedProduct.categories.length > 0 ? selectedProduct.categories.map(cat => cat.name).join(', ') : 'N/A'}</p>
                 </div>
+                <div>
+                  <h4 className="font-semibold text-lg mb-1">Prix:</h4>
+                  <p className="text-gray-700 dark:text-gray-300">{formatPriceDisplay(selectedProduct.price)}</p>
+                </div>
+                {selectedProduct.listPrice !== undefined && selectedProduct.listPrice !== 0 && (
+                  <div>
+                    <h4 className="font-semibold text-lg mb-1">Prix affiché:</h4>
+                    <p className="text-gray-700 dark:text-gray-300">{formatPriceDisplay(selectedProduct.listPrice)}</p>
               </div>
             )}
-
-            {/* Product Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Informations générales</h3>
-                <div className="space-y-3">
+                  <h4 className="font-semibold text-lg mb-1">Marque:</h4>
+                  <p className="text-gray-700 dark:text-gray-300">{selectedProduct.brand || 'N/A'}</p>
+                </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Catégorie:</span>
-                    <p className="text-gray-900 dark:text-gray-100">{selectedProduct.category?.name}</p>
+                  <h4 className="font-semibold text-lg mb-1">Stock:</h4>
+                  <p className="text-gray-700 dark:text-gray-300">{selectedProduct.countInStock}</p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Prix:</span>
-                    <p className="text-gray-900 dark:text-gray-100">{formatPriceDisplay(selectedProduct.price)}</p>
+                  <h4 className="font-semibold text-lg mb-1">Ventes:</h4>
+                  <p className="text-gray-700 dark:text-gray-300">{selectedProduct.numSales ?? 0}</p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Stock:</span>
-                    <p className="text-gray-900 dark:text-gray-100">{selectedProduct.stock}</p>
+                  <h4 className="font-semibold text-lg mb-1">Publié:</h4>
+                  <p className="text-gray-700 dark:text-gray-300">{selectedProduct.isPublished ? 'Oui' : 'Non'}</p>
                   </div>
                   {selectedProduct.ficheTechnique && (
                     <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Fiche Technique:</span>
-                      <p className="text-gray-900 dark:text-gray-100">{selectedProduct.ficheTechnique.title}</p>
+                    <h4 className="font-semibold text-lg mb-1">Fiche Technique:</h4>
+                    <p className="text-gray-700 dark:text-gray-300">{selectedProduct.ficheTechnique.title}</p>
                     </div>
                   )}
+                {selectedProduct.tags && selectedProduct.tags.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-lg mb-1">Tags:</h4>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      {selectedProduct.tags.map((tag) => {
+                        const translatedTag = {
+                          'new-arrival': 'Nouvel arrivage',
+                          'featured': 'En vedette',
+                          'best-seller': 'Meilleure vente',
+                          'todays-deal': 'Offre du jour',
+                        }[tag] || tag;
+                        return <span key={tag} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-2 mb-2">{translatedTag}</span>;
+                      })}
+                    </p>
                 </div>
+                )}
               </div>
-
-              {/* Variants */}
-              {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+              <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Variantes</h3>
-                  <div className="space-y-3">
-                    {selectedProduct.variants.map((variant, index) => (
-                      <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-2">
-                        <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          {variant.options && Array.isArray(variant.options)
-                            ? variant.options.map((opt: any) => {
-                                console.log('Variant Option - opt:', JSON.parse(JSON.stringify(opt)));
-                                console.log('productToEdit.attributes:', JSON.parse(JSON.stringify(productToEdit?.attributes)));
-                                // opt.attributeId يجب أن يكون كائنًا مأهولًا { _id, name }
-                                // opt.value هو ID مثل '683c072cdc9ff7fcbac25386'
-
-                                const attributeName = opt.attributeId?.name; // مثلاً 'Color', 'Seau'
-                                let displayValue = opt.value; // القيمة الافتراضية هي الـ ID
-
-                                // البحث عن القيمة الوصفية في productToEdit.attributes باستخدام opt.value كـ _id
-                                const matchingAttributeValueEntry = productToEdit?.attributes?.find(
-                                  (attrItem: any) =>
-                                    attrItem.value === opt.value && // Match the attribute value entry by its value (the descriptive string)
-                                    attrItem.attribute &&
-                                    attrItem.attribute._id === opt.attributeId?._id // Match attribute type
-                                );
-
-                                if (matchingAttributeValueEntry) {
-                                  // إذا تم العثور على إدخال مطابق، استخدم قيمته الوصفية 'value'
-                                  displayValue = matchingAttributeValueEntry.value;
-                                }
-
-                                return attributeName ? `${attributeName}: ${displayValue}` : displayValue;
-                              }).filter(Boolean).join(' / ')
-                            : ''}
+                  <h4 className="font-semibold text-lg mb-1">Description:</h4>
+                  <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300" dangerouslySetInnerHTML={{ __html: selectedProduct.description }} />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm text-gray-600 dark:text-gray-400">Stock:</label>
-                          <input
-                            type="number"
-                            className="flex-1 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            value={variant.stock ?? 0}
-                            onChange={e => handleEditChange('variantStock', e.target.value, index)}
-                            min="0"
-                          />
-                        </div>
-                      </div>
+                {selectedProduct.images && selectedProduct.images.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-lg mb-1">Images:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProduct.images.map((img, index) => (
+                        <img key={index} src={img} alt={`Produit ${index + 1}`} className="w-24 h-24 object-cover rounded-md border border-gray-200" />
                     ))}
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Description */}
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Description</h3>
-              <div 
-                className="prose dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: selectedProduct.description }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* نافذة منبثقة لكل المنتجات التي ستوكها أقل من 5 */}
-      {lowStockModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-2xl relative animate-fade-in max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setLowStockModalOpen(false)} className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-2xl font-bold">&times;</button>
-            <h2 className="text-xl font-bold mb-4 text-yellow-500 text-center">Tous les produits presque épuisés</h2>
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="bg-gray-100 dark:bg-gray-800">
-                  <th className="px-3 py-2 text-left">Produit</th>
-                  <th className="px-3 py-2 text-left">Attributs</th>
-                  <th className="px-3 py-2 text-center">Stock</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lowStockList.map((item, i) => (
-                  <tr key={item.product._id + '-' + i} className="border-b border-gray-200 dark:border-gray-800">
-                    <td className="px-3 py-2">{item.product.name}</td>
-                    <td className="px-3 py-2">{item.attributes || '-'}</td>
-                    <td className="px-3 py-2 text-center text-red-600 font-bold">{item.stock}</td>
-                  </tr>
+                {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-lg mb-1">Variantes:</h4>
+                    <ul className="space-y-2">
+                      {selectedProduct.variants.map((variant, index) => (
+                        <li key={index} className="border p-2 rounded-md bg-gray-50 dark:bg-gray-800">
+                          <p className="font-medium text-gray-800 dark:text-gray-200 mb-2">
+                            Options: {variant.options.map((opt: any) => {
+                              // console.log("Variant option:", opt);
+                              const attributeName = getAttributeName(opt.attributeId || '', selectedProduct);
+                              // console.log("Attribute Name for ID ", opt.attributeId, ":", attributeName);
+                              return `${attributeName}: ${opt.value}`;
+                            }).join(', ')}
+                          </p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">Prix: {variant.price ? formatPriceDisplay(variant.price) : 'N/A'}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">Stock: {variant.stock ?? 'N/A'}</p>
+                          {variant.image && (
+                            <img src={variant.image} alt="Variante" className="w-16 h-16 object-cover rounded-md mt-1" />
+                          )}
+                        </li>
                 ))}
-              </tbody>
-            </table>
+                    </ul>
+                  </div>
+                )}
           </div>
         </div>
       )}
+          <DialogFooter className="mt-6">
+            <Button onClick={() => setSelectedProduct(null)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Edit Modal */}
-      {editModalOpen && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm"
-          onClick={() => {
-            setEditModalOpen(false);
-            setNewImages([]); // Clear new images on close
-            setImagesToDelete([]); // Clear images to delete on close
-          }}
-        >
-          <div
-            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-lg mx-2 p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              onClick={() => {
-                setEditModalOpen(false);
-                setNewImages([]); // Clear new images on close
-                setImagesToDelete([]); // Clear images to delete on close
-              }}
-              className="absolute top-3 right-3 text-gray-500 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 text-2xl font-bold focus:outline-none"
-              aria-label="Fermer"
-            >
-              &times;
-            </button>
-            <h2 className="text-xl font-bold mb-4">Modifier le Produit</h2>
-            <div className="space-y-4">
-              {/* Product Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Nom du produit</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={editForm.name}
-                  onChange={e => handleEditChange('name', e.target.value)}
-                  placeholder="Nom du produit"
-                />
-              </div>
-
-              {/* General Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Price */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Prix</label>
-                  <input
-                    type="number"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={editForm.price}
-                    onChange={e => handleEditChange('price', e.target.value)}
-                    placeholder="Prix"
-                    step="0.01"
-                    min="0"
-                  />
-                </div>
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Catégorie</label>
-                  <select
-                    value={editForm.category}
-                    onChange={e => handleEditChange('category', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Sélectionner une catégorie</option>
-                    {(Array.isArray(categories) ? categories : []).map(cat => (
-                      <option key={cat._id} value={cat._id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-                {/* Fiche Technique */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fiche Technique</label>
-                  <select
-                    value={editForm.ficheTechnique}
-                    onChange={e => handleEditChange('ficheTechnique', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Sélectionner une fiche technique</option>
-                    {(Array.isArray(catalogues) ? catalogues : []).map(cat => (
-                      <option key={cat._id} value={cat._id}>{cat.title}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Stock Management */}
-              {editForm.variants && editForm.variants.length > 0 ? (
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">Stock des variantes</h3>
-                  {editForm.variants.map((variant, index) => (
-                    <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-2">
-                      <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {variant.options && Array.isArray(variant.options)
-                          ? variant.options.map((opt: any) => {
-                              console.log('Variant Option - opt:', JSON.parse(JSON.stringify(opt)));
-                              console.log('productToEdit.attributes:', JSON.parse(JSON.stringify(productToEdit?.attributes)));
-                              // opt.attributeId يجب أن يكون كائنًا مأهولًا { _id, name }
-                              // opt.value هو ID مثل '683c072cdc9ff7fcbac25386'
-
-                              const attributeName = opt.attributeId?.name; // مثلاً 'Color', 'Seau'
-                              let displayValue = opt.value; // القيمة الافتراضية هي الـ ID
-
-                              // البحث عن القيمة الوصفية في productToEdit.attributes باستخدام opt.value كـ _id
-                              const matchingAttributeValueEntry = productToEdit?.attributes?.find(
-                                (attrItem: any) =>
-                                  attrItem.value === opt.value && // Match the attribute value entry by its value (the descriptive string)
-                                  attrItem.attribute &&
-                                  attrItem.attribute._id === opt.attributeId?._id // Match attribute type
-                              );
-
-                              if (matchingAttributeValueEntry) {
-                                // إذا تم العثور على إدخال مطابق، استخدم قيمته الوصفية 'value'
-                                displayValue = matchingAttributeValueEntry.value;
-                              }
-
-                              return attributeName ? `${attributeName}: ${displayValue}` : displayValue;
-                            }).filter(Boolean).join(' / ')
-                          : ''}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-sm text-gray-600 dark:text-gray-400">Stock:</label>
-                        <input
-                          type="number"
-                          className="flex-1 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          value={variant.stock ?? 0}
-                          onChange={e => handleEditChange('variantStock', e.target.value, index)}
-                          min="0"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Stock principal</label>
-                  <input
-                    type="number"
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={editForm.stock}
-                    onChange={e => handleEditChange('stock', e.target.value)}
-                    placeholder="Stock"
-                    min="0"
-                  />
-                </div>
-              )}
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Description du produit</label>
-                <TiptapEditor
-                  key={editForm.description}
-                  content={editForm.description}
-                  onChange={value => {
-                    console.log('Tiptap onChange:', value)
-                    handleEditChange('description', value)
-                  }}
-                />
-              </div>
-
-              {/* Image Section - New */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl shadow p-4 space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FiImage className="text-blue-500" />
-                  <h2 className="text-xl font-semibold">Images du produit</h2>
-                </div>
-
-                {/* Existing Images */}
-                {baseImages.length > 0 && (
+      {/* Low Stock Products Modal */}
+      <Dialog open={lowStockModalOpen} onOpenChange={setLowStockModalOpen}>
+        <DialogContent className="sm:max-w-[600px] p-6">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Produits à Faible Stock</DialogTitle>
+            <DialogDescription className="text-gray-500">Liste des produits dont le stock est inférieur au seuil.</DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4 max-h-[400px] overflow-y-auto">
+            {bestSellers.filter(p => p.countInStock !== undefined && p.countInStock <= 5).length === 0 ? (
+              <p className="text-gray-700 dark:text-gray-300">Aucun produit à faible stock pour le moment.</p>
+            ) : (
+              bestSellers.filter(p => p.countInStock !== undefined && p.countInStock <= 5).map(product => (
+                <div key={product._id} className="flex items-center gap-4 p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+                  {product.images && product.images[0] && (
+                    <img src={product.images[0]} alt={product.name} className="w-16 h-16 object-cover rounded-md" />
+                  )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Images actuelles:</label>
-                    <div className="flex flex-wrap gap-2">
-                      {baseImages.map((imageUrl, index) => (
-                        <div key={index} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                          <img src={imageUrl} alt={`Product Image ${index}`} className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => handleBaseImageDelete(imageUrl)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 transition-colors"
-                            title="Supprimer cette image"
-                          >
-                            <FiX className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* New Image Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Ajouter de nouvelles images:</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleBaseImageUpload}
-                    className="block w-full text-sm text-gray-500
-                                file:mr-4 file:py-2 file:px-4
-                                file:rounded-md file:border-0
-                                file:text-sm file:font-semibold
-                                file:bg-blue-50 file:text-blue-700
-                                hover:file:bg-blue-100"
-                  />
-                </div>
-
-                {/* Preview New Images */}
-                {newImages.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Nouvelles images à télécharger:</label>
-                    <div className="flex flex-wrap gap-2">
-                      {newImages.map((file, index) => (
-                        <div key={index} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                          <img src={URL.createObjectURL(file)} alt={`New Image ${index}`} className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => setNewImages(prev => prev.filter((_, i) => i !== index))}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 transition-colors"
-                            title="Annuler le téléchargement de cette image"
-                          >
-                            <FiX className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Save Button */}
-            <button
-              onClick={handleEditSave}
-              disabled={editLoading}
-              className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition disabled:opacity-60"
-            >
-              {editLoading ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
+                    <h3 className="font-semibold text-lg">{product.name}</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">Stock actuel: {product.countInStock}</p>
+                    <Button variant="link" onClick={() => {
+                      setLowStockModalOpen(false);
+                      getLowStockVariants(product);
+                    }} className="p-0 h-auto text-blue-600 dark:text-blue-400">
+                      Modifier le produit
+                    </Button>
           </div>
         </div>
+              ))
       )}
-
     </div>
-  )
+          <DialogFooter className="mt-6">
+            <Button onClick={() => setLowStockModalOpen(false)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

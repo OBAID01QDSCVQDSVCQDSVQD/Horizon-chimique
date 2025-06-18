@@ -1,7 +1,18 @@
 // attribute.model.ts
-import mongoose, { Schema, model, models } from 'mongoose'
+import mongoose, { Schema, model, models, Document } from 'mongoose'
 
-const AttributeSchema = new Schema({
+export interface IAttribute extends Document {
+  name: string;
+  values: {
+    label: string;
+    image?: string;
+    extraPrice?: number;
+  }[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const AttributeSchema = new Schema<IAttribute>({
   name: { type: String, required: true, unique: true },
   values: [
     {
@@ -12,5 +23,5 @@ const AttributeSchema = new Schema({
   ],
 }, { timestamps: true })
 
-const Attribute = models.Attribute || model('Attribute', AttributeSchema)
+const Attribute = models.Attribute || model<IAttribute>('Attribute', AttributeSchema)
 export default Attribute

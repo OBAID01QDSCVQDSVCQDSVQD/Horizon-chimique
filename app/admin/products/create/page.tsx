@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { getAllAttributes } from '@/lib/db/actions/attribute.actions'
-import { FiInfo, FiImage, FiTag, FiLayers, FiSave, FiBold, FiItalic, FiList, FiCopy } from 'react-icons/fi'
+import { FiInfo, FiImage, FiTag, FiLayers, FiSave, FiBold, FiItalic, FiList, FiCopy, FiX, FiPlus, FiUpload } from 'react-icons/fi'
 import { FaBoxOpen } from 'react-icons/fa'
 import { Combobox } from '@headlessui/react'
 import dynamic from 'next/dynamic'
@@ -22,9 +22,10 @@ export default function CreateProductPage() {
   const router = useRouter()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
-  const [category, setCategory] = useState('')
   const [categorySearch, setCategorySearch] = useState('')
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [currentCategory, setCurrentCategory] = useState<string>('')
   const [brand, setBrand] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
@@ -46,6 +47,57 @@ export default function CreateProductPage() {
   const [catalogueSearch, setCatalogueSearch] = useState('')
   const [loadingCatalogues, setLoadingCatalogues] = useState(false)
   const [cataloguesError, setCataloguesError] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    name: '',
+    slug: '',
+    description: '{"type":"doc","content":[{"type":"paragraph"}]}',
+    price: '',
+    listPrice: '',
+    stock: '',
+    categories: [] as string[],
+    brand: '',
+    images: [] as string[],
+    newImages: [] as File[],
+    tags: [] as string[],
+    ficheTechnique: ''
+  })
+  const [availableTags, setAvailableTags] = useState<{ _id: string; name: string }[]>([])
+  const [tagSearch, setTagSearch] = useState('')
+  const [loadingTags, setLoadingTags] = useState(false)
+  const [uploadingVariantImage, setUploadingVariantImage] = useState<number | null>(null)
+
+  // Add this constant for predefined tags
+  const PREDEFINED_TAGS = [
+    { id: 'new-arrival', label: 'Nouvel arrivage' },
+    { id: 'featured', label: 'En vedette' },
+    { id: 'best-seller', label: 'Meilleure vente' },
+    { id: 'todays-deal', label: 'Offre du jour' }
+  ]
+
+  // Re-introducing and standardizing the Cloudinary upload function
+  const uploadImageToCloudinary = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', 'ecommerce-app') // Make sure this preset is correct
+    
+    try {
+      const res = await fetch('https://api.cloudinary.com/v1_1/dwio60ll1/image/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to upload image to Cloudinary: ${errorText}`);
+      }
+      
+      const data = await res.json()
+      return data.secure_url
+    } catch (error) {
+      console.error('Error in uploadImageToCloudinary:', error);
+      throw error; // Re-throw to be caught by calling function
+    }
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -88,6 +140,18 @@ export default function CreateProductPage() {
           setCatalogues(formattedCatalogues);
           setLoadingCatalogues(false);
         }
+
+        // Fetch tags
+        // setLoadingTags(true);
+        // const tagsRes = await fetch('/api/tags');
+        // if (!tagsRes.ok) {
+        //   throw new Error('Failed to fetch tags');
+        // }
+        // const tagsData = await tagsRes.json();
+        // if (isMounted) {
+        //   setAvailableTags(tagsData);
+        //   setLoadingTags(false);
+        // }
       } catch (error) {
         console.error('Erreur:', error);
         if (isMounted) {
@@ -134,24 +198,48 @@ export default function CreateProductPage() {
     })))
   }, [selectedAttributes])
 
-  const uploadImageToCloudinary = async (file: File) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('upload_preset', 'ecommerce-app')
-    const res = await fetch('https://api.cloudinary.com/v1_1/dwio60ll1/image/upload', {
-      method: 'POST',
-      body: formData,
-    })
-    const data = await res.json()
-    return data.secure_url
-  }
-
   const handleVariantImageChange = async (index: number, file: File | null) => {
-    if (!file) return
-    const url = await uploadImageToCloudinary(file)
-    const newVariants = [...variants]
-    newVariants[index].image = url
-    setVariants(newVariants)
+    console.log(`handleVariantImageChange called for index: ${index}, file:`, file);
+    if (!file) {
+      console.log('No file selected, returning.');
+      return;
+    }
+    
+    try {
+      setUploadingVariantImage(index);
+      console.log(`Uploading image for variant ${index}...`);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'ecommerce-app');
+      
+      const res = await fetch('https://api.cloudinary.com/v1_1/dwio60ll1/image/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Cloudinary upload failed with status ${res.status}:`, errorText);
+        throw new Error(`Failed to upload image: ${errorText}`);
+      }
+      
+      const data = await res.json();
+      const url = data.secure_url;
+      console.log(`Image uploaded successfully. URL: ${url}`);
+      
+      const newVariants = [...variants];
+      newVariants[index].image = url;
+      setVariants(newVariants);
+      
+      toast.success('تم رفع الصورة بنجاح');
+    } catch (error) {
+      console.error('Error uploading variant image:', error);
+      toast.error('فشل في رفع الصورة. يرجى المحاولة مرة أخرى');
+    } finally {
+      setUploadingVariantImage(null);
+      console.log(`Finished upload attempt for variant ${index}.`);
+    }
   }
 
   const handleVariantPriceChange = (index: number, value: string) => {
@@ -236,58 +324,86 @@ export default function CreateProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submit button clicked');
-    setLoading(true);
     setError(null);
+    setLoading(true);
+
     try {
-      const attributesForDb = selectedAttributes.flatMap(attr =>
-        attr.values.map(valObj => ({
-          attribute: attr.attributeId,
-          value: valObj.value,
-          image: valObj.image,
-          price: valObj.price,
+      // Basic validation using form state
+      if (!form.name || !form.slug || !form.price || !form.brand || !form.description) {
+        setError('Veuillez remplir tous les champs obligatoires');
+        toast.error('Veuillez remplir tous les champs obligatoires');
+        setLoading(false);
+        return;
+      }
+
+      // Upload base images (if any new images are selected)
+      const uploadedImages = await uploadImages(form.newImages);
+
+      // Prepare variants for submission
+      const variantsToSend = variants.map(v => ({
+        options: v.options.map((opt: any) => ({
+          attributeId: opt.attributeId, // This should be the ObjectId string
+          value: getValueString(opt.value),
+        })),
+        price: Number(v.price) || 0,
+        image: v.image || '',
+        stock: Number(v.stock) || 0,
+      }));
+
+      // Prepare attributes for submission in the correct format expected by the Product model
+      const formattedAttributes = selectedAttributes.flatMap(attr =>
+        attr.values.map(val => ({
+          attribute: attr.attributeId, // This is the ObjectId of the Attribute document
+          value: typeof val === 'object' ? (val as any).value : val, // Get the string value from the object or use directly
+          ...(val.image && { image: val.image }), // Add image if present
+          ...(val.price !== undefined && { price: Number(val.price) }), // Add price if present (using val.price)
         }))
-      )
-      const productData = {
-        name,
-        slug,
-        category,
-        brand,
-        description,
-        price: parseFloat(price),
-        listPrice: parseFloat(listPrice),
-        countInStock: variants.length === 0 ? parseInt(countInStock) || 0 : 0, // ignore main stock if variants
-        images: baseImages,
-        attributes: attributesForDb,
-        variants: variants.length > 0 ? variants.map(v => ({ ...v, stock: parseInt(v.stock) || 0 })) : [],
-        isPublished: true,
-        avgRating: 0,
-        numReviews: 0,
-        numSales: 0,
-        tags: ['new arrival'],
-        ficheTechnique: ficheTechnique || undefined,
-      }
+      );
+      
+      const productData: any = {
+        name: form.name,
+        slug: form.slug,
+        categories: selectedCategories, // Use selectedCategories state
+        brand: form.brand,
+        description: form.description,
+        price: Number(form.price),
+        listPrice: Number(form.listPrice) || undefined,
+        countInStock: Number(form.stock) || 0,
+        images: uploadedImages.concat(form.images), // Combine newly uploaded with existing images
+        tags: form.tags, // Use form.tags state
+        attributes: formattedAttributes, // Use the newly formatted attributes
+        variants: variantsToSend, // Use the newly prepared variants
+        isPublished: true, // Default value
+        avgRating: 0,      // Default value
+        numReviews: 0,     // Default value
+        numSales: 0,       // Default value
+        ficheTechnique: form.ficheTechnique || undefined, // Use form.ficheTechnique
+      };
 
-      const res = await fetch('/api/products/create', {
+      console.log('Product data sent to API (before JSON.stringify):', productData);
+      const res = await fetch('/api/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(productData),
-      })
+      });
 
-      const result = await res.json()
-      if (res.ok) {
-        toast.success('Product created successfully!');
-        router.push(`/product/${result.product.slug}`);
-      } else {
-        setError(result.message || 'Failed to create product');
-        toast.error(result.message || 'Failed to create product');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Échec de la création du produit');
       }
+
+      toast.success('Produit créé avec succès !');
+      router.push('/admin/products');
     } catch (err: any) {
-      setError(err.message || 'Error creating product')
+      console.error('Erreur lors de la création du produit:', err);
+      setError(err.message || 'Une erreur inattendue est survenue.');
+      toast.error(err.message || 'Une erreur inattendue est survenue.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   async function uploadImages(files: File[]) {
     const urls: string[] = [];
@@ -344,10 +460,132 @@ export default function CreateProductPage() {
           <FiInfo className="text-blue-500" />
           <h2 className="text-xl font-semibold">Informations générales</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input placeholder="Nom du produit" value={name} onChange={e => setName(e.target.value)} />
-          <Input placeholder="Slug" value={slug} onChange={e => setSlug(e.target.value)} />
-          <Input placeholder="Marque" value={brand} onChange={e => setBrand(e.target.value)} />
+        <CardContent className="p-0 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Nom du produit</label>
+            <Input placeholder="Nom du produit" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Slug</label>
+            <Input placeholder="Slug" value={slug} onChange={e => setSlug(e.target.value)} />
+          </div>
+
+          {/* Categories selection with add button and tags */}
+          <div className="space-y-2 col-span-full">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Catégories
+            </label>
+            <div className="flex gap-2 items-center">
+              <select
+                value={currentCategory}
+                onChange={e => setCurrentCategory(e.target.value)}
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Sélectionner une catégorie</option>
+                {categories.map(cat => (
+                  <option key={cat._id} value={cat._id} disabled={selectedCategories.includes(cat._id)}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                onClick={() => {
+                  if (currentCategory && !selectedCategories.includes(currentCategory)) {
+                    setSelectedCategories(prev => [...prev, currentCategory]);
+                    setCurrentCategory(''); // Reset dropdown
+                  }
+                }}
+                className="flex items-center gap-1"
+                disabled={!currentCategory}
+              >
+                <FiPlus className="w-4 h-4" /> Ajouter
+              </Button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {selectedCategories.map(catId => {
+                const category = categories.find(c => c._id === catId);
+                return category ? (
+                  <span
+                    key={catId}
+                    className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-800 px-3 py-0.5 text-sm font-medium text-blue-800 dark:text-blue-100"
+                  >
+                    {category.name}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategories(prev => prev.filter(id => id !== catId))}
+                      className="ml-1 -mr-0.5 h-4 w-4 rounded-full flex items-center justify-center text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
+                    >
+                      <FiX className="h-3 w-3" />
+                    </button>
+                  </span>
+                ) : null;
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Marque</label>
+            <Input placeholder="Marque" value={brand} onChange={e => setBrand(e.target.value)} />
+          </div>
+          <div className="col-span-full">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Tags</label>
+            <div className="flex gap-2 items-center">
+              <div className="relative w-full">
+                <select
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value=""
+                  onChange={(e) => {
+                    const selectedTag = e.target.value;
+                    if (selectedTag && !form.tags.includes(selectedTag)) {
+                      setForm(prev => ({
+                        ...prev,
+                        tags: [...prev.tags, selectedTag]
+                      }));
+                    }
+                    e.target.value = ''; // Reset select after selection
+                  }}
+                >
+                  <option value="">Sélectionner un tag...</option>
+                  {PREDEFINED_TAGS.map((tag) => (
+                    <option 
+                      key={tag.id} 
+                      value={tag.id}
+                      disabled={form.tags.includes(tag.id)}
+                    >
+                      {tag.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {form.tags.map((tagId) => {
+                const tag = PREDEFINED_TAGS.find(t => t.id === tagId);
+                return tag ? (
+                  <span
+                    key={tagId}
+                    className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-800 px-3 py-0.5 text-sm font-medium text-blue-800 dark:text-blue-100"
+                  >
+                    {tag.label}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm(prev => ({
+                          ...prev,
+                          tags: prev.tags.filter(t => t !== tagId)
+                        }));
+                      }}
+                      className="ml-1 -mr-0.5 h-4 w-4 rounded-full flex items-center justify-center text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
+                    >
+                      <FiX className="h-3 w-3" />
+                    </button>
+                  </span>
+                ) : null;
+              })}
+            </div>
+          </div>
           <Input placeholder="Prix de base (€)" value={price} onChange={e => setPrice(e.target.value)} type="number" />
           <Input placeholder="Prix affiché (€)" value={listPrice} onChange={e => setListPrice(e.target.value)} type="number" />
           {/* Stock logic: show main stock if no variants, else show variant stock table */}
@@ -393,7 +631,7 @@ export default function CreateProductPage() {
               </div>
             </div>
           )}
-        </div>
+        </CardContent>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Description du produit</label>
           {/* AI Description Generator */}
@@ -425,7 +663,7 @@ export default function CreateProductPage() {
                 readOnly
                 rows={5}
                 className="w-full border border-gray-300 rounded p-2 text-gray-800 pr-16 bg-gray-50"
-                placeholder="Description générée apparaîtra ici..."
+                placeholder="Description générée apparaîtra هنا..."
                 style={{ resize: 'vertical', minHeight: 80 }}
               />
               <button
@@ -461,16 +699,22 @@ export default function CreateProductPage() {
         <div className="flex flex-col md:flex-row gap-4 items-center">
           <label className="w-full md:w-1/2 flex flex-col items-center px-4 py-6 bg-gray-50 dark:bg-gray-800 text-blue-600 rounded-lg shadow-md tracking-wide uppercase border border-blue-200 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-700 transition">
             <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>
-            <span className="mt-2 text-base leading-normal">Glisser-déposer ou cliquer pour télécharger</span>
+            <span className="mt-2 text-base leading-normal">Glisser-déposer أو انقر للتحميل</span>
             <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
               if (!e.target.files) return
               const files = Array.from(e.target.files)
               const urls: string[] = []
               for (const file of files) {
-                const url = await uploadImageToCloudinary(file)
-                urls.push(url)
+                try {
+                  const url = await uploadImageToCloudinary(file)
+                  urls.push(url)
+                } catch (uploadError) {
+                  console.error('Error uploading base image:', uploadError);
+                  toast.error('فشل في رفع الصورة الرئيسية. يرجى المحاولة مرة أخرى.');
+                  // Optionally break or continue based on desired behavior for multiple uploads
+                }
               }
-              setBaseImages(urls)
+              setBaseImages(prev => [...prev, ...urls]) // Append new images
             }} />
           </label>
           <div className="flex gap-2 flex-wrap">
@@ -498,8 +742,8 @@ export default function CreateProductPage() {
                 <label className="block font-medium mb-1" htmlFor="category">Catégorie</label>
                 <select
                   id="category"
-                  value={category}
-                  onChange={e => setCategory(e.target.value)}
+                  value={categorySearch}
+                  onChange={e => setCategorySearch(e.target.value)}
                   className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">Sélectionner une catégorie</option>
@@ -510,7 +754,7 @@ export default function CreateProductPage() {
                       </option>
                     ))
                   ) : (
-                    <option value="" disabled>Aucune catégorie disponible</option>
+                    <option value="" disabled>لا توجد فئات متاحة</option>
                   )}
                 </select>
               </div>
@@ -529,9 +773,9 @@ export default function CreateProductPage() {
                 >
                   <option value="">Sélectionner une fiche technique</option>
                   {loadingCatalogues ? (
-                    <option value="" disabled>Chargement...</option>
+                    <option value="" disabled>جاري التحميل...</option>
                   ) : cataloguesError ? (
-                    <option value="" disabled>Erreur de chargement</option>
+                    <option value="" disabled>خطأ في التحميل</option>
                   ) : catalogues && catalogues.length > 0 ? (
                     catalogues.map(cat => (
                       <option key={typeof cat._id === 'object' && '$oid' in cat._id ? cat._id.$oid : cat._id} value={typeof cat._id === 'object' && '$oid' in cat._id ? cat._id.$oid : cat._id}>
@@ -539,7 +783,7 @@ export default function CreateProductPage() {
                       </option>
                     ))
                   ) : (
-                    <option value="" disabled>Aucune fiche technique disponible</option>
+                    <option value="" disabled>لا توجد أوراق بيانات متاحة</option>
                   )}
                 </select>
                 {cataloguesError && (
@@ -557,7 +801,7 @@ export default function CreateProductPage() {
           <h2 className="text-xl font-semibold">Attributs</h2>
         </div>
         {attributes.length === 0 ? (
-          <div className="text-gray-400">Aucun attribut disponible.</div>
+          <div className="text-gray-400">لا توجد سمات متاحة.</div>
         ) : (
           attributes.map(attr => (
             <div key={attr._id} className="mb-2">
@@ -604,28 +848,56 @@ export default function CreateProductPage() {
                 <div className="flex gap-2 items-center">
                   <Input
                     type="number"
-                    placeholder="Prix"
+                    placeholder="السعر"
                     value={variant.price}
                     onChange={e => handleVariantPriceChange(i, e.target.value)}
                     className="w-24"
                   />
                   <Input
                     type="number"
-                    placeholder="Stock"
+                    placeholder="المخزون"
                     value={variant.stock || ''}
                     onChange={e => handleVariantStockChange(i, e.target.value)}
                     className="w-24"
                     min={0}
                   />
                 </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => handleVariantImageChange(i, e.target.files?.[0] || null)}
-                />
-                {variant.image && variant.image.trim() !== "" && (
-                  <img src={variant.image} alt="variant" className="w-12 h-12 object-contain" />
-                )}
+                <div className="flex-1 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Image de la variante:
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {uploadingVariantImage === i ? (
+                      <div className="text-sm text-gray-500">جاري الرفع...</div>
+                    ) : (
+                      <>
+                        {variant.image ? (
+                          <img src={variant.image} alt="variant" className="w-16 h-16 object-contain rounded border" />
+                        ) : (
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <FiImage className="w-5 h-5" />
+                            <span>Variante actuelle</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => handleVariantImageChange(i, e.target.files?.[0] || null)}
+                      disabled={uploadingVariantImage === i}
+                      className="hidden" // Hide the input
+                      id={`variant-image-input-${i}`} // Add unique ID for each input
+                    />
+                    <label
+                      htmlFor={`variant-image-input-${i}`}
+                      className="flex items-center gap-1 px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 rounded-lg shadow-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-700 transition border border-gray-300 dark:border-gray-700"
+                    >
+                      <FiUpload className="w-4 h-4" />
+                      <span>Modifier l'image</span>
+                    </label>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -634,7 +906,7 @@ export default function CreateProductPage() {
       {/* زر الحفظ والتنبيهات */}
       <div className="flex justify-end">
         <Button type="submit" className="mt-4 flex items-center gap-2 px-6 py-2 text-lg" onClick={handleSubmit} disabled={loading}>
-          <FiSave /> {loading ? 'Enregistrement...' : 'Enregistrer le produit'}
+          <FiSave /> {loading ? 'جاري الحفظ...' : 'حفظ المنتج'}
         </Button>
       </div>
       {error && <div className="text-red-500 mt-2 text-center">{error}</div>}

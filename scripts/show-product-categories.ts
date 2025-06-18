@@ -9,7 +9,15 @@ async function run() {
   const products = await Product.find().lean()
 
   for (const p of products) {
-    console.log(`🛍️ ${p.name}\n  ➤ category: ${p.category} (type: ${typeof p.category})\n`)
+    console.log(`🛍️ ${p.name}`)
+    console.log(`  ➤ categories: ${JSON.stringify(p.categories)} (type: ${typeof p.categories})`)
+    
+    if (p.categories && Array.isArray(p.categories)) {
+      p.categories.forEach((cat, index) => {
+        console.log(`    [${index}] ${cat} (${typeof cat})`)
+      })
+    }
+    console.log('') // Empty line for better readability
   }
 
   process.exit(0)

@@ -9,7 +9,7 @@ import ProductSlider from '@/components/shared/product/product-slider';
 import Rating from '@/components/shared/product/rating';
 import AddToBrowsingHistory from '@/components/shared/product/add-to-browsing-history';
 import AddToCart from '@/components/shared/product/add-to-cart';
-import { generateId, round2 } from '@/lib/utils';
+import { generateId, round2, getValueString } from '@/lib/utils';
 import { FiDownload } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 
@@ -17,56 +17,115 @@ import { Button } from '@/components/ui/button';
 const STOCK_TEXT = 'Stock disponible :';
 const OUT_OF_STOCK_TEXT = 'Rupture de stock';
 
-export default function ProductDetailsClient({ product, relatedProducts }: { product: any, relatedProducts: any[] }) {
-  // Group attributes by name
+export default function ProductDetailsClient({ product, relatedProducts, allAttributes }: { product: any, relatedProducts: any[], allAttributes: any[] }) {
+  console.log('Product data received in ProductDetailsClient:', product);
+  // Group attributes by name based on available variants
   const grouped: Record<string, string[]> = {};
-  product.attributes?.forEach((attr: any) => {
-    const attrName = (attr.attribute && typeof attr.attribute === 'object' && 'name' in attr.attribute)
-      ? (attr.attribute as any).name
-      : attr.attribute;
-    if (!grouped[attrName]) grouped[attrName] = [];
-    if (!grouped[attrName].includes(attr.value)) grouped[attrName].push(attr.value);
+  console.log('Product attributes in ProductDetailsClient:', product.attributes);
+
+  // Iterate through variants to build grouped attributes
+  product.variants?.forEach((variant: any) => {
+    variant.options.forEach((opt: any) => {
+      const attrObj = product.attributes.find((a: any) => {
+        if (a.attribute && typeof a.attribute === 'object' && a.attribute._id) {
+          return a.attribute._id.toString() === opt.attributeId.toString();
+        }
+        return a.attribute === opt.attributeId.toString();
+      });
+
+      let attrName = null;
+      if (attrObj && attrObj.attribute && typeof attrObj.attribute === 'object' && 'name' in attrObj.attribute) {
+        attrName = attrObj.attribute.name;
+      } else if (typeof attrObj?.attribute === 'string') {
+        const foundAttribute = allAttributes.find(a => a._id === attrObj.attribute);
+        if (foundAttribute) {
+          attrName = foundAttribute.name;
+        }
+      }
+
+      const attrValue = getValueString(opt.value);
+      if (attrName) {
+        if (!grouped[attrName]) grouped[attrName] = [];
+        if (!grouped[attrName].includes(attrValue)) grouped[attrName].push(attrValue);
+      }
+    });
   });
 
   // State for selected values
   const [selected, setSelected] = useState<Record<string, string>>(() => {
     const defaults: Record<string, string> = {};
-    Object.entries(grouped).forEach(([attrName, values]) => {
-      if (values.length === 1) {
-        defaults[attrName] = values[0];
-      }
-    });
+    console.log('DEBUG SELECT INITIAL: Starting useState initialization. Product variants:', product.variants);
+    console.log('DEBUG SELECT INITIAL: Product attributes:', product.attributes);
+
+    let initialVariantToSelect = null;
+
+    // 1. Try to find a variant with stock first
+    initialVariantToSelect = product.variants?.find((v: any) => v.stock > 0);
+    console.log('DEBUG SELECT INITIAL: Variant with stock found:', initialVariantToSelect);
+
+    // 2. If no variant with stock, try to find any variant
+    if (!initialVariantToSelect && product.variants && product.variants.length > 0) {
+      initialVariantToSelect = product.variants[0];
+      console.log('DEBUG SELECT INITIAL: No variant with stock, defaulting to first variant:', initialVariantToSelect);
+    }
+    
+    // 3. Populate defaults based on the chosen initial variant
+    if (initialVariantToSelect) {
+      initialVariantToSelect.options.forEach((opt: any) => {
+        // Find the corresponding attribute details from allAttributes based on attributeId
+        const foundAttribute = allAttributes.find((a: any) => a._id.toString() === opt.attributeId.toString());
+        if (foundAttribute) {
+          const attrName = foundAttribute.name;
+          if (attrName) {
+            defaults[attrName] = getValueString(opt.value);
+          }
+        }
+      });
+    } else {
+      // Fallback: If no variants at all, use first available values from grouped
+      Object.entries(grouped).forEach(([attrName, values]) => {
+        if (values.length > 0) {
+          defaults[attrName] = values[0];
+        }
+      });
+      console.log('DEBUG SELECT INITIAL: No variants, defaulting to grouped values:', defaults);
+    }
+
+    console.log('DEBUG SELECT INITIAL: Final selected defaults:', defaults);
     return defaults;
   });
 
-  // Find matching variant
-  const selectedVariant = useMemo(() => {
-    if (!product.variants || product.variants.length === 0) return null;
-    return product.variants.find((variant: any) =>
-      variant.options.every((opt: any) => {
-        // Find attribute name by id
-        const attrObj = product.attributes.find((a: any) => {
-          if (a.attribute && typeof a.attribute === 'object' && a.attribute._id) {
-            return a.attribute._id === opt.attributeId;
-          }
-          return a.attribute === opt.attributeId;
-        });
-        const attrName = attrObj && attrObj.attribute && typeof attrObj.attribute === 'object' && 'name' in attrObj.attribute
-          ? attrObj.attribute.name
-          : attrObj?.attribute;
-        return selected[attrName] === opt.value;
-      })
-    );
-  }, [selected, product]);
+  // أضف هذا المتغير قبل return
+  const allAttributesSelected = Object.entries(grouped).every(([attrName, values]) => selected[attrName]);
 
-  // الكمية المتوفرة للفاريونت المطابق
-  const availableStock = selectedVariant
-    ? selectedVariant.stock
-    : (product.countInStock ?? product.stock ?? 0);
+  // Prepare selected attributes for cart item
+  const formattedSelectedAttributes = Object.entries(selected).map(([attrName, attrValue]) => ({
+    attribute: attrName,
+    value: attrValue,
+  }));
 
-  // لوج للتشخيص
-  console.log('selectedVariant:', selectedVariant);
-  console.log('availableStock:', availableStock);
+  // Find the matching variant based on selected attributes
+  const matchingVariant = product.variants?.find((variant: {
+    options: Array<{
+      attributeId: string;
+      value: string;
+    }>;
+    stock: number;
+    price?: number;
+    image?: string;
+  }) =>
+    variant.options.every((opt: { attributeId: string; value: string }) => {
+      const foundAttribute = allAttributes.find((a: any) => a._id.toString() === opt.attributeId.toString());
+      const attributeName = foundAttribute ? foundAttribute.name : undefined;
+
+      return formattedSelectedAttributes.some(selected => 
+        selected.attribute === attributeName && selected.value === getValueString(opt.value)
+      );
+    })
+  );
+
+  // Get available stock for the selected variant
+  const availableStock = matchingVariant?.stock || 0;
 
   // Merge product images with selected attribute images (if any)
   const galleryImages = useMemo(() => {
@@ -76,27 +135,29 @@ export default function ProductDetailsClient({ product, relatedProducts }: { pro
       const attrName = attr.attribute && typeof attr.attribute === 'object' && 'name' in attr.attribute
         ? attr.attribute.name
         : attr.attribute;
-      if (selected[attrName] === attr.value && attr.image) {
+      // Ensure attr.image is not an empty string before pushing
+      if (attrName && selected[attrName] === attr.value && attr.image && attr.image.trim() !== '') {
         images.push(attr.image);
       }
     });
     // Add variant image if available
-    if (selectedVariant?.image) {
-      images.unshift(selectedVariant.image);
+    // Ensure matchingVariant.image is not an empty string before unshifting
+    if (matchingVariant?.image && matchingVariant.image.trim() !== '') {
+      images.unshift(matchingVariant.image);
     }
+    console.log('DEBUG GALLERY: Images before final filter:', images);
     // فلترة الصور النهائية
-    return Array.from(new Set(images)).filter(img => img && typeof img === 'string' && img.trim() !== "");
-  }, [product, selected, selectedVariant]);
+    const finalImages = Array.from(new Set(images)).filter(img => img && typeof img === 'string' && img.trim() !== "");
+    console.log('DEBUG GALLERY: Images after final filter:', finalImages);
+    return finalImages;
+  }, [product, selected, matchingVariant]);
 
   // Price to display
-  const displayPrice = selectedVariant?.price ?? product.price;
-
-  // أضف هذا المتغير قبل return
-  const allAttributesSelected = Object.entries(grouped).every(([attrName, values]) => selected[attrName]);
+  const displayPrice = matchingVariant?.price ?? product.price;
 
   return (
     <section>
-      <AddToBrowsingHistory id={product._id} category={product.category} />
+      <AddToBrowsingHistory id={product._id} category={product.categories[0]} />
       <div className='grid grid-cols-1 md:grid-cols-5'>
         <div className='col-span-2'>
           <ProductGallery images={galleryImages} />
@@ -131,7 +192,29 @@ export default function ProductDetailsClient({ product, relatedProducts }: { pro
               product={product}
               selected={selected}
               setSelected={setSelected}
+              allAttributes={allAttributes}
             />
+          </div>
+          <Separator className='my-2' />
+          {/* Stock Display Section */}
+          <div className='mt-2'>
+            {allAttributesSelected && matchingVariant ? (
+              <p className={
+                `text-lg font-semibold ${availableStock > 0 ? 'text-green-600' : 'text-red-600'}`
+              }>
+                {availableStock > 0
+                  ? `${STOCK_TEXT} ${availableStock}`
+                  : OUT_OF_STOCK_TEXT}
+              </p>
+            ) : (
+              <p className={
+                `text-lg font-semibold ${product.countInStock > 0 ? 'text-green-600' : 'text-red-600'}`
+              }>
+                {product.countInStock > 0
+                  ? `${STOCK_TEXT} ${product.countInStock}`
+                  : OUT_OF_STOCK_TEXT}
+              </p>
+            )}
           </div>
           <Separator className='my-2' />
           {/* Fiche Technique Section */}
@@ -207,14 +290,15 @@ export default function ProductDetailsClient({ product, relatedProducts }: { pro
                     product: product._id,
                     name: product.name,
                     slug: product.slug,
-                    category: product.category,
+                    category: product.categories[0],
+                    image: matchingVariant?.image || product.images[0],
                     price: round2(displayPrice),
-                    quantity: 1,
-                    image: galleryImages[0],
                     countInStock: availableStock,
-                    attributes: Object.entries(selected).map(([attribute, value]) => ({ attribute, value })),
+                    attributes: formattedSelectedAttributes,
+                    variantId: matchingVariant._id,
+                    quantity: 1,
                   }}
-                  disabled={!allAttributesSelected || availableStock === 0}
+                  disabled={!allAttributesSelected || availableStock <= 0}
                 />
               </div>
             )}
@@ -224,7 +308,7 @@ export default function ProductDetailsClient({ product, relatedProducts }: { pro
       <section className='mt-10'>
         <ProductSlider
           products={relatedProducts}
-          title={`Meilleures ventes dans ${product.category?.name || 'cette catégorie'}`}
+          title={`Meilleures ventes dans ${product.categories[0]?.name || 'cette catégorie'}`}
         />
       </section>
     </section>

@@ -53,3 +53,10 @@ export function getDirection(locale: string) {
 export async function hashPassword(password: string) {
   return await bcrypt.hash(password, 10)
 }
+
+export function getValueString(val: any): string {
+  if (typeof val === 'object' && val !== null) {
+    return (val.label || val.value || '').toString().trim();
+  }
+  return (val || '').toString().trim();
+}

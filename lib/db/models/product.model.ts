@@ -1,14 +1,12 @@
 import { Document, Model, model, models, Schema } from 'mongoose'
 import { IProductInput } from '@/types'
 import mongoose from 'mongoose'
-import '@/lib/db/models/attribute.model'
-
 
 export interface IProduct extends Document {
   _id: string
   name: string
   slug: string
-  category: any // أو mongoose.Types.ObjectId | string
+  categories: mongoose.Types.ObjectId[]
   images: string[]
   brand: string
   description: string
@@ -17,14 +15,14 @@ export interface IProduct extends Document {
   countInStock: number
   tags?: string[]
   attributes?: {
-    attribute: string
+    attribute: mongoose.Types.ObjectId
     value: string
     image?: string
     price?: number
   }[]
   variants?: {
     options: {
-      attributeId: string
+      attributeId: mongoose.Types.ObjectId
       value: string
     }[]
     price?: number
@@ -47,14 +45,14 @@ const productSchema = new Schema<IProduct>(
   {
     name: { type: String },
     slug: { type: String, unique: true },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
+    categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
     images: [String],
     brand: { type: String },
     description: { type: String, trim: true },
     price: { type: Number },
     listPrice: { type: Number },
     countInStock: { type: Number },
-    tags: { type: [String], default: ['new arrival'] },
+    tags: { type: [String], default: ['new-arrival'] },
     attributes: [
       {
         attribute: {
@@ -99,7 +97,10 @@ const productSchema = new Schema<IProduct>(
   }
 )
 
-const Product =
-  (models.Product as Model<IProduct>) || model<IProduct>('Product', productSchema)
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined'
+
+// Only create the model if we're not in a browser environment
+const Product: Model<IProduct> = (models.Product as Model<IProduct>) || model<IProduct>('Product', productSchema)
 
 export default Product

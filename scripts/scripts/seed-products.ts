@@ -85,7 +85,7 @@ async function seedProducts() {
         $set: {
           name: prod.name,
           slug: prod.slug,
-          category: category._id,
+          categories: [category._id],
           images: prod.images,
           brand: prod.brand,
           description: prod.description,

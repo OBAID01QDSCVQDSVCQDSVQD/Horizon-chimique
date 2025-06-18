@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import { Heading } from '@tiptap/extension-heading'
 import { BulletList } from '@tiptap/extension-bullet-list'
@@ -22,7 +22,7 @@ import { TextAlign } from '@tiptap/extension-text-align'
 import { FiBold, FiItalic, FiUnderline, FiType, FiLink, FiImage, FiList, FiAlignLeft, FiDroplet, FiAlignCenter, FiAlignRight, FiAlignJustify } from 'react-icons/fi'
 
 interface TiptapEditorProps {
-  content: string
+  content: string;
   onChange: (content: string) => void
   className?: string
 }
@@ -57,16 +57,23 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({ content, onChange, classNam
         types: ['heading', 'paragraph'],
       }),
     ],
-    content: content,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      onChange(editor.getHTML());
     },
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert min-h-[150px] max-h-[300px] overflow-y-auto w-full p-2 border border-input rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
       },
     },
-  })
+  });
+
+  useEffect(() => {
+    if (editor && typeof content === 'string') {
+      if (editor.getHTML() !== content) {
+        editor.commands.setContent(content || '');
+      }
+    }
+  }, [content, editor]);
 
   const setLink = useCallback(() => {
     if (!editor) return

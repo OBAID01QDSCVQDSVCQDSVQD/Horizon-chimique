@@ -14,13 +14,21 @@ async function fixGenericProductsCategory() {
     return;
   }
 
-  // نجيب جميع المنتجات ثم نفلتر فقط إلي عندهم category = "Shoes"
+  // نجيب جميع المنتجات ثم نفلتر فقط إلي عندهم categories تحتوي على "Shoes"
   const allProducts = await Product.find({});
-  const targetProducts = allProducts.filter(p => p.category === 'Shoes');
+  const targetProducts = allProducts.filter(p => 
+    p.categories && Array.isArray(p.categories) && 
+    p.categories.some(cat => cat.toString() === 'Shoes')
+  );
 
   let updated = 0;
   for (const product of targetProducts) {
-    product.category = shoesCategory._id;
+    // إزالة "Shoes" من المصفوفة وإضافة معرف فئة الأحذية الصحيح
+    product.categories = product.categories.filter(cat => 
+      cat.toString() !== 'Shoes'
+    );
+    product.categories.push(shoesCategory._id);
+    
     await product.save();
     updated++;
     console.log(`✅ Updated "${product.name}" → Shoes`);
