@@ -46,31 +46,52 @@ export default function ProfilePage() {
   // Cloudinary upload function
   const uploadToCloudinary = async (file: File) => {
     try {
-    const formData = new FormData();
-    formData.append('file', file);
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
+      // Vérification de la taille du fichier (moins de 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('La taille du fichier est trop grande. Elle doit être inférieure à 10MB');
+      }
+
+      // Vérification du type de fichier
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Le fichier doit être une image');
+      }
+
+      // Vérification de la présence des variables d\'environnement
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+      if (!cloudName || !uploadPreset) {
+        throw new Error('Les paramètres Cloudinary ne sont pas présents dans les variables d\'environnement');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
       
       const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
         {
-      method: 'POST',
-      body: formData,
+          method: 'POST',
+          body: formData,
         }
       );
       
       if (!res.ok) {
-        throw new Error('Failed to upload image');
+        const errorData = await res.text();
+        console.error('Cloudinary error:', errorData);
+        throw new Error(`Échec du téléchargement de l'image: ${res.status}`);
       }
       
-    const data = await res.json();
-    return data.secure_url;
+      const data = await res.json();
+      console.log('Image téléchargée avec succès:', data.secure_url);
+      return data.secure_url;
     } catch (error) {
-      console.error('Error uploading to Cloudinary:', error);
+      console.error('Erreur lors du téléchargement de l\'image vers Cloudinary:', error);
       throw error;
     }
   };
 
-  // تعديل handleProfileImageChange لرفع صورة البروفايل إلى Cloudinary
+  // Modification de handleProfileImageChange pour télécharger l'image de profil vers Cloudinary
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -88,17 +109,21 @@ export default function ProfilePage() {
     }
   };
 
-  // تعديل handleCompanyLogoChange لرفع لوجو الشركة إلى Cloudinary
+  // Modification de handleCompanyLogoChange pour télécharger le logo de l'entreprise vers Cloudinary
   const handleCompanyLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
         setLoading(true);
-      const url = await uploadToCloudinary(file);
-      setForm(f => ({ ...f, companyLogo: url }));
-      } catch (error) {
-        console.error('Error uploading company logo:', error);
-        alert("Erreur lors du téléchargement du logo de la société");
+        console.log('Début du téléchargement du logo de l\'entreprise...', file.name, file.size, file.type);
+        const url = await uploadToCloudinary(file);
+        console.log('Logo de l\'entreprise téléchargé avec succès:', url);
+        setForm(f => ({ ...f, companyLogo: url }));
+        alert("Logo de l'entreprise téléchargé avec succès!");
+      } catch (error: any) {
+        console.error('Erreur lors du téléchargement du logo de l\'entreprise:', error);
+        const errorMessage = error.message || "Erreur inconnue lors du téléchargement du logo";
+        alert(`Erreur lors du téléchargement du logo de l'entreprise: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -182,7 +207,7 @@ export default function ProfilePage() {
       ) : (
         <>
           <div className="flex flex-col items-center gap-4 mb-8">
-            {/* صورة البروفايل */}
+            {/* Image de profil */}
             <div className="relative w-32 h-32 mb-2">
               <img
                 src={userData?.profileImage || "/default-avatar.png"}
@@ -193,7 +218,7 @@ export default function ProfilePage() {
             <div className="text-xl font-bold text-gray-800">{userData?.name}</div>
             <div className="text-gray-500">{userData?.email}</div>
             
-            {/* معلومات الشركة */}
+            {/* Informations de l'entreprise */}
             {userData?.company && (
               <div className="flex flex-col items-center gap-2 mt-4 p-4 bg-gray-50 rounded-xl w-full">
                 <div className="flex items-center gap-3">
@@ -220,7 +245,7 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* معلومات المستخدم */}
+          {/* Informations utilisateur */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -258,7 +283,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* تواريخ الإنشاء والتحديث */}
+          {/* Dates de création et de modification */}
           <div className="mt-4 text-sm text-gray-500 flex justify-between">
             <span>Créé le: {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString('fr-FR') : '-'}</span>
             <span>Modifié le: {userData?.updatedAt ? new Date(userData.updatedAt).toLocaleDateString('fr-FR') : '-'}</span>
@@ -266,7 +291,7 @@ export default function ProfilePage() {
         </>
       )}
 
-      {/* نافذة التعديل */}
+      {/* Fenêtre de modification */}
       {showEdit && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center min-h-screen py-4 backdrop-blur-sm bg-black/40" onClick={() => setShowEdit(false)}>
           <div
@@ -285,7 +310,7 @@ export default function ProfilePage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* صورة البروفايل */}
+              {/* Image de profil */}
               <div className="flex flex-col items-center gap-4">
                 <div className="relative w-24 h-24">
                   <img
@@ -301,7 +326,7 @@ export default function ProfilePage() {
                 <span className="text-sm text-gray-500">Photo de profil</span>
               </div>
 
-              {/* لوجو الشركة */}
+              {/* Logo de l'entreprise */}
               <div className="flex flex-col items-center gap-4">
                 <div className="relative w-24 h-24 bg-white rounded-lg border-2 border-blue-200 flex items-center justify-center">
                   {form.companyLogo ? (
@@ -321,7 +346,7 @@ export default function ProfilePage() {
                 <span className="text-sm text-gray-500">Logo de la société</span>
               </div>
 
-              {/* حقول النموذج */}
+              {/* Champs du formulaire */}
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="block font-semibold mb-1">Nom</label>
@@ -365,7 +390,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* زر الحفظ */}
+              {/* Bouton de sauvegarde */}
               <button
                 type="submit"
                 disabled={loading}

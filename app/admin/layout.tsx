@@ -47,7 +47,7 @@ const menuItems = [
     icon: FiSettings
   },
   {
-    title: 'Catalogues',
+    title: 'Fiche Technique',
     href: '/admin/catalogues',
     icon: FiFileText
   }

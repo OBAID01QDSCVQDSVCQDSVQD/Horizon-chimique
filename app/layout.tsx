@@ -1,11 +1,14 @@
-'use client'
 import TopHeader from '@/components/shared/header/header1'
 import Header from '@/components/shared/header'
 import Footer from '@/components/shared/footer'
 import '@/app/globals.css'
-import { signIn } from 'next-auth/react'
 
 import ClientProviders from '@/components/shared/client-providers'
+
+export const metadata = {
+  title: 'Horizon Chimique',
+  description: 'Produits chimiques de construction',
+}
 
 export default function RootLayout({
   children,

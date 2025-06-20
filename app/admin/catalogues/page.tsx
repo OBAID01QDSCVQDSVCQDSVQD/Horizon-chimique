@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { FiPlus, FiEye, FiEdit2, FiTrash2, FiDownload } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { useSession } from 'next-auth/react';
@@ -30,12 +30,16 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, Pencil, Trash2, FileText } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FileText, Smile } from 'lucide-react';
 import TiptapEditor from '@/components/TiptapEditor';
+import Picker from '@emoji-mart/react';
+import data from '@emoji-mart/data';
 
 interface Catalogue {
   _id: { $oid: string } | string;
+  // الحقول الفرنسية (الافتراضية)
   title: string;
+  shortdesc: string;
   description: string;
   domaine: string;
   proprietes: string;
@@ -46,9 +50,37 @@ interface Catalogue {
   nettoyage: string;
   stockage: string;
   consignes: string;
+  
+  // الحقول الإنجليزية
+  title_en?: string;
+  shortdesc_en?: string;
+  description_en?: string;
+  domaine_en?: string;
+  proprietes_en?: string;
+  preparation_en?: string;
+  conditions_en?: string;
+  application_en?: string;
+  consommation_en?: string;
+  nettoyage_en?: string;
+  stockage_en?: string;
+  consignes_en?: string;
+  
+  // الحقول العربية
+  title_ar?: string;
+  shortdesc_ar?: string;
+  description_ar?: string;
+  domaine_ar?: string;
+  proprietes_ar?: string;
+  preparation_ar?: string;
+  conditions_ar?: string;
+  application_ar?: string;
+  consommation_ar?: string;
+  nettoyage_ar?: string;
+  stockage_ar?: string;
+  consignes_ar?: string;
+  
   createdAt: string;
   updatedAt: string;
-  shortdesc: string;
 }
 
 export default function AdminCataloguesPage() {
@@ -59,7 +91,9 @@ export default function AdminCataloguesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCatalogue, setEditingCatalogue] = useState<Catalogue | null>(null);
   const [formData, setFormData] = useState({
+    // الفرنسية (الافتراضية)
     title: '',
+    shortdesc: '',
     description: '',
     domaine: '',
     proprietes: '',
@@ -70,23 +104,99 @@ export default function AdminCataloguesPage() {
     nettoyage: '',
     stockage: '',
     consignes: '',
-    shortdesc: '',
+    
+    // الإنجليزية
+    title_en: '',
+    shortdesc_en: '',
+    description_en: '',
+    domaine_en: '',
+    proprietes_en: '',
+    preparation_en: '',
+    conditions_en: '',
+    application_en: '',
+    consommation_en: '',
+    nettoyage_en: '',
+    stockage_en: '',
+    consignes_en: '',
+    
+    // العربية
+    title_ar: '',
+    shortdesc_ar: '',
+    description_ar: '',
+    domaine_ar: '',
+    proprietes_ar: '',
+    preparation_ar: '',
+    conditions_ar: '',
+    application_ar: '',
+    consommation_ar: '',
+    nettoyage_ar: '',
+    stockage_ar: '',
+    consignes_ar: '',
   });
+  
+  const [activeTab, setActiveTab] = useState<'fr' | 'en' | 'ar'>('fr');
+  const [isTranslating, setIsTranslating] = useState(false);
   const [viewingCatalogue, setViewingCatalogue] = useState<Catalogue | null>(null);
+  
+  // Emoji picker states
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [currentEmojiField, setCurrentEmojiField] = useState<string | null>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchCatalogues();
   }, []);
 
+  // Emoji picker functions
+  const insertEmoji = (emoji: any) => {
+    if (!currentEmojiField) return;
+    
+    const currentContent = (formData as any)[currentEmojiField] || '';
+    const newContent = currentContent + emoji.native;
+    
+    setFormData(prev => ({
+      ...prev,
+      [currentEmojiField]: newContent
+    }));
+    
+    setShowEmojiPicker(false);
+    setCurrentEmojiField(null);
+  };
+
+  const openEmojiPicker = (fieldName: string) => {
+    setCurrentEmojiField(fieldName);
+    setShowEmojiPicker(true);
+  };
+
+  // Click outside to close emoji picker
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (showEmojiPicker && emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+        setCurrentEmojiField(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showEmojiPicker]);
+
   const fetchCatalogues = async () => {
     try {
       const response = await fetch('/api/catalogues');
-      if (!response.ok) throw new Error('Erreur lors de la récupération des catalogues');
+      if (!response.ok) throw new Error('Erreur lors de la récupération des fiches techniques');
       const data = await response.json();
+      console.log('Fetched catalogues with translations:', data.map((c: any) => ({
+        id: c._id,
+        title: c.title,
+        title_en: c.title_en,
+        title_ar: c.title_ar,
+        hasEnglish: !!c.title_en,
+        hasArabic: !!c.title_ar
+      })));
       setCatalogues(data);
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la récupération des catalogues');
+      toast.error('Erreur lors de la récupération des fiches techniques');
     } finally {
       setLoading(false);
     }
@@ -110,20 +220,20 @@ export default function AdminCataloguesPage() {
 
       toast.success(
         editingCatalogue
-          ? 'Catalogue mis à jour avec succès'
-          : 'Catalogue créé avec succès'
+          ? 'Fiche Technique mise à jour avec succès'
+          : 'Fiche Technique créée avec succès'
       );
       setIsDialogOpen(false);
       fetchCatalogues();
       resetForm();
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la sauvegarde du catalogue');
+      toast.error('Erreur lors de la sauvegarde de la fiche technique');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce catalogue ?')) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette fiche technique ?')) return;
 
     try {
       const response = await fetch(`/api/catalogues/${id}`, {
@@ -132,37 +242,119 @@ export default function AdminCataloguesPage() {
 
       if (!response.ok) throw new Error('Erreur lors de la suppression');
 
-      toast.success('Catalogue supprimé avec succès');
+      toast.success('Fiche Technique supprimée avec succès');
       fetchCatalogues();
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors de la suppression du catalogue');
+              toast.error('Erreur lors de la suppression de la fiche technique');
     }
   };
 
   const handleEdit = (catalogue: Catalogue) => {
     console.log('handleEdit called with catalogue:', catalogue);
+    console.log('English fields:', {
+      title_en: catalogue.title_en,
+      description_en: catalogue.description_en,
+      shortdesc_en: catalogue.shortdesc_en
+    });
+    console.log('Arabic fields:', {
+      title_ar: catalogue.title_ar,
+      description_ar: catalogue.description_ar,
+      shortdesc_ar: catalogue.shortdesc_ar
+    });
     setEditingCatalogue(catalogue);
     setFormData({
-      title: catalogue.title,
-      description: catalogue.description,
-      domaine: catalogue.domaine,
-      proprietes: catalogue.proprietes,
-      preparation: catalogue.preparation,
-      conditions: catalogue.conditions,
-      application: catalogue.application,
-      consommation: catalogue.consommation,
-      nettoyage: catalogue.nettoyage,
-      stockage: catalogue.stockage,
-      consignes: catalogue.consignes,
-      shortdesc: catalogue.shortdesc,
+      // الفرنسية
+      title: catalogue.title || '',
+      shortdesc: catalogue.shortdesc || '',
+      description: catalogue.description || '',
+      domaine: catalogue.domaine || '',
+      proprietes: catalogue.proprietes || '',
+      preparation: catalogue.preparation || '',
+      conditions: catalogue.conditions || '',
+      application: catalogue.application || '',
+      consommation: catalogue.consommation || '',
+      nettoyage: catalogue.nettoyage || '',
+      stockage: catalogue.stockage || '',
+      consignes: catalogue.consignes || '',
+      
+      // الإنجليزية
+      title_en: catalogue.title_en || '',
+      shortdesc_en: catalogue.shortdesc_en || '',
+      description_en: catalogue.description_en || '',
+      domaine_en: catalogue.domaine_en || '',
+      proprietes_en: catalogue.proprietes_en || '',
+      preparation_en: catalogue.preparation_en || '',
+      conditions_en: catalogue.conditions_en || '',
+      application_en: catalogue.application_en || '',
+      consommation_en: catalogue.consommation_en || '',
+      nettoyage_en: catalogue.nettoyage_en || '',
+      stockage_en: catalogue.stockage_en || '',
+      consignes_en: catalogue.consignes_en || '',
+      
+      // العربية
+      title_ar: catalogue.title_ar || '',
+      shortdesc_ar: catalogue.shortdesc_ar || '',
+      description_ar: catalogue.description_ar || '',
+      domaine_ar: catalogue.domaine_ar || '',
+      proprietes_ar: catalogue.proprietes_ar || '',
+      preparation_ar: catalogue.preparation_ar || '',
+      conditions_ar: catalogue.conditions_ar || '',
+      application_ar: catalogue.application_ar || '',
+      consommation_ar: catalogue.consommation_ar || '',
+      nettoyage_ar: catalogue.nettoyage_ar || '',
+      stockage_ar: catalogue.stockage_ar || '',
+      consignes_ar: catalogue.consignes_ar || '',
     });
     setIsDialogOpen(true);
   };
 
+  // دالة الترجمة التلقائية
+  const translateField = async (fieldName: string, fromLang: string, toLang: string) => {
+    const sourceField = fromLang === 'fr' ? fieldName : `${fieldName}_${fromLang}`;
+    const targetField = toLang === 'fr' ? fieldName : `${fieldName}_${toLang}`;
+    
+    const sourceText = (formData as any)[sourceField];
+    if (!sourceText || !sourceText.trim()) {
+      toast.error('النص المصدر فارغ');
+      return;
+    }
+    
+    setIsTranslating(true);
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: sourceText,
+          fromLang,
+          toLang,
+          context: fieldName
+        }),
+      });
+      
+      if (!response.ok) throw new Error('فشل في الترجمة');
+      
+      const data = await response.json();
+      setFormData(prev => ({
+        ...prev,
+        [targetField]: data.translatedText
+      }));
+      
+      toast.success(`تم ترجمة ${fieldName} بنجاح`);
+    } catch (error) {
+      console.error('خطأ في الترجمة:', error);
+      toast.error('فشل في الترجمة');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
+      // الفرنسية (الافتراضية)
       title: '',
+      shortdesc: '',
       description: '',
       domaine: '',
       proprietes: '',
@@ -173,9 +365,319 @@ export default function AdminCataloguesPage() {
       nettoyage: '',
       stockage: '',
       consignes: '',
-      shortdesc: '',
+      
+      // الإنجليزية
+      title_en: '',
+      shortdesc_en: '',
+      description_en: '',
+      domaine_en: '',
+      proprietes_en: '',
+      preparation_en: '',
+      conditions_en: '',
+      application_en: '',
+      consommation_en: '',
+      nettoyage_en: '',
+      stockage_en: '',
+      consignes_en: '',
+      
+      // العربية
+      title_ar: '',
+      shortdesc_ar: '',
+      description_ar: '',
+      domaine_ar: '',
+      proprietes_ar: '',
+      preparation_ar: '',
+      conditions_ar: '',
+      application_ar: '',
+      consommation_ar: '',
+      nettoyage_ar: '',
+      stockage_ar: '',
+      consignes_ar: '',
     });
     setEditingCatalogue(null);
+    setShowEmojiPicker(false);
+    setCurrentEmojiField(null);
+  };
+
+  // Emoji button component
+  const EmojiButton = ({ fieldName, className = "" }: { fieldName: string, className?: string }) => (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => openEmojiPicker(fieldName)}
+      className={`p-2 hover:bg-blue-100 text-gray-500 hover:text-blue-500 transition ${className}`}
+      title="إضافة إيموجي"
+    >
+      <Smile className="w-4 h-4" />
+    </Button>
+  );
+
+  // إضافة دالة لتحميل PDF للفرنسية والإنجليزية
+  const downloadPDF = async (catalogueId: string, title: string, lang: string = 'fr') => {
+    try {
+      // فتح نافذة جديدة مع HTML
+      const htmlUrl = `/api/catalogues/${catalogueId}/pdf?lang=${lang}`;
+      const newWindow = window.open(htmlUrl, '_blank', 'width=900,height=700');
+      
+      if (newWindow) {
+        // انتظار تحميل المحتوى
+        newWindow.onload = () => {
+          // إضافة زر طباعة في النافذة الجديدة
+          const printButton = newWindow.document.createElement('button');
+          printButton.innerHTML = lang === 'fr' ? '🖨️ Imprimer / Télécharger PDF' : '🖨️ Print / Download PDF';
+          printButton.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: #003366;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', 'Roboto', Arial, sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,51,102,0.3);
+            transition: all 0.3s ease;
+          `;
+          
+          printButton.onmouseover = () => {
+            printButton.style.background = '#004080';
+            printButton.style.transform = 'translateY(-2px)';
+          };
+          
+          printButton.onmouseout = () => {
+            printButton.style.background = '#003366';
+            printButton.style.transform = 'translateY(0)';
+          };
+          
+          printButton.onclick = () => {
+            // إخفاء الأزرار والتعليمات قبل الطباعة
+            printButton.style.display = 'none';
+            instructions.style.display = 'none';
+            
+            // طباعة مع تأخير قصير
+            setTimeout(() => {
+              newWindow.print();
+              
+              // إظهار الأزرار مرة أخرى بعد الطباعة
+              setTimeout(() => {
+                printButton.style.display = 'block';
+                instructions.style.display = 'block';
+              }, 1000);
+            }, 100);
+          };
+          
+          newWindow.document.body.appendChild(printButton);
+          
+          // إضافة تعليمات محسنة
+          const instructions = newWindow.document.createElement('div');
+          const instructionsText = lang === 'fr' ? 
+            `<div style="color: #003366; font-weight: 700; margin-bottom: 12px; font-size: 15px;">
+               📋 Instructions de téléchargement:
+             </div>
+             <div style="color: #555;">
+               <div style="margin-bottom: 8px;">1️⃣ Cliquez sur "Imprimer / Télécharger PDF"</div>
+               <div style="margin-bottom: 8px;">2️⃣ Dans la fenêtre d'impression, choisissez <strong>"Enregistrer au format PDF"</strong></div>
+               <div style="margin-bottom: 8px;">3️⃣ Sélectionnez l'emplacement et cliquez <strong>"Enregistrer"</strong></div>
+               <div style="margin-top: 12px; padding: 8px; background: #e3f2fd; border-radius: 5px; font-size: 12px;">
+                 💡 <strong>Conseil:</strong> Le texte sera affiché avec une police claire et un formatage parfait
+               </div>
+             </div>` :
+            `<div style="color: #003366; font-weight: 700; margin-bottom: 12px; font-size: 15px;">
+               📋 Download Instructions:
+             </div>
+             <div style="color: #555;">
+               <div style="margin-bottom: 8px;">1️⃣ Click "Print / Download PDF"</div>
+               <div style="margin-bottom: 8px;">2️⃣ In the print window, choose <strong>"Save as PDF"</strong></div>
+               <div style="margin-bottom: 8px;">3️⃣ Select location and click <strong>"Save"</strong></div>
+               <div style="margin-top: 12px; padding: 8px; background: #e3f2fd; border-radius: 5px; font-size: 12px;">
+                 💡 <strong>Tip:</strong> Text will display with clear fonts and perfect formatting
+               </div>
+             </div>`;
+             
+          instructions.innerHTML = `
+            <div style="
+              position: fixed;
+              top: 80px;
+              right: 20px;
+              background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+              padding: 20px;
+              border-radius: 10px;
+              border: 2px solid #003366;
+              font-family: 'Inter', 'Roboto', Arial, sans-serif;
+              font-size: 13px;
+              max-width: 320px;
+              z-index: 1000;
+              box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+              line-height: 1.6;
+            ">
+              ${instructionsText}
+            </div>
+          `;
+          newWindow.document.body.appendChild(instructions);
+          
+          // إضافة زر إغلاق للتعليمات
+          const closeBtn = newWindow.document.createElement('button');
+          closeBtn.innerHTML = '×';
+          closeBtn.style.cssText = `
+            position: fixed;
+            top: 85px;
+            left: 25px;
+            z-index: 1001;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            width: 25px;
+            height: 25px;
+            line-height: 1;
+          `;
+          
+          closeBtn.onclick = () => {
+            instructions.style.display = 'none';
+            closeBtn.style.display = 'none';
+          };
+          
+          newWindow.document.body.appendChild(closeBtn);
+        };
+      }
+    } catch (error) {
+      console.error('Erreur lors du téléchargement du PDF:', error);
+      alert('Erreur lors du téléchargement du PDF');
+    }
+  };
+
+  // إضافة دالة لتحميل PDF العربي
+  const downloadArabicPDF = async (catalogueId: string, title: string) => {
+    try {
+      // فتح نافذة جديدة مع HTML العربي
+      const htmlUrl = `/api/catalogues/${catalogueId}/pdf-arabic`;
+      const newWindow = window.open(htmlUrl, '_blank', 'width=900,height=700');
+      
+      if (newWindow) {
+        // انتظار تحميل المحتوى
+        newWindow.onload = () => {
+          // إضافة زر طباعة في النافذة الجديدة
+          const printButton = newWindow.document.createElement('button');
+          printButton.innerHTML = '🖨️ طباعة / تحميل PDF';
+          printButton.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: #003366;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Noto Sans Arabic', Arial, sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,51,102,0.3);
+            transition: all 0.3s ease;
+          `;
+          
+          printButton.onmouseover = () => {
+            printButton.style.background = '#004080';
+            printButton.style.transform = 'translateY(-2px)';
+          };
+          
+          printButton.onmouseout = () => {
+            printButton.style.background = '#003366';
+            printButton.style.transform = 'translateY(0)';
+          };
+          
+          printButton.onclick = () => {
+            // إخفاء الأزرار والتعليمات قبل الطباعة
+            printButton.style.display = 'none';
+            instructions.style.display = 'none';
+            
+            // طباعة مع تأخير قصير
+            setTimeout(() => {
+              newWindow.print();
+              
+              // إظهار الأزرار مرة أخرى بعد الطباعة
+              setTimeout(() => {
+                printButton.style.display = 'block';
+                instructions.style.display = 'block';
+              }, 1000);
+            }, 100);
+          };
+          
+          newWindow.document.body.appendChild(printButton);
+          
+          // إضافة تعليمات محسنة
+          const instructions = newWindow.document.createElement('div');
+          instructions.innerHTML = `
+            <div style="
+              position: fixed;
+              top: 80px;
+              right: 20px;
+              background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+              padding: 20px;
+              border-radius: 10px;
+              border: 2px solid #003366;
+              font-family: 'Noto Sans Arabic', Arial, sans-serif;
+              font-size: 13px;
+              max-width: 320px;
+              z-index: 1000;
+              box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+              line-height: 1.6;
+            ">
+              <div style="color: #003366; font-weight: 700; margin-bottom: 12px; font-size: 15px;">
+                📋 تعليمات التحميل:
+              </div>
+              <div style="color: #555;">
+                <div style="margin-bottom: 8px;">1️⃣ اضغط على زر "طباعة / تحميل PDF"</div>
+                <div style="margin-bottom: 8px;">2️⃣ في نافذة الطباعة، اختر <strong>"حفظ كـ PDF"</strong></div>
+                <div style="margin-bottom: 8px;">3️⃣ حدد مكان الحفظ واضغط <strong>"حفظ"</strong></div>
+                <div style="margin-top: 12px; padding: 8px; background: #e3f2fd; border-radius: 5px; font-size: 12px;">
+                  💡 <strong>نصيحة:</strong> النص العربي سيظهر بخط جميل ومنسق مع دعم كامل للرجوع للسطر
+                </div>
+              </div>
+            </div>
+          `;
+          newWindow.document.body.appendChild(instructions);
+          
+          // إضافة زر إغلاق للتعليمات
+          const closeBtn = newWindow.document.createElement('button');
+          closeBtn.innerHTML = '✖️';
+          closeBtn.style.cssText = `
+            position: fixed;
+            top: 85px;
+            left: 25px;
+            z-index: 1001;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 10px;
+            width: 25px;
+            height: 25px;
+          `;
+          
+          closeBtn.onclick = () => {
+            instructions.style.display = 'none';
+            closeBtn.style.display = 'none';
+          };
+          
+          newWindow.document.body.appendChild(closeBtn);
+        };
+      }
+    } catch (error) {
+      console.error('خطأ في تحميل PDF العربي:', error);
+      alert('حدث خطأ في تحميل PDF العربي');
+    }
   };
 
   if (!session) {
@@ -191,159 +693,777 @@ export default function AdminCataloguesPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Catalogues</CardTitle>
+            <CardTitle>Fiche Technique</CardTitle>
             <CardDescription>
-              Gérez les catalogues de produits
+              Gérez les fiches techniques de produits
             </CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => resetForm()}>
                 <Plus className="w-4 h-4 mr-2" />
-                Nouveau Catalogue
+                Nouvelle Fiche Technique
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {editingCatalogue ? 'Modifier le Catalogue' : 'Nouveau Catalogue'}
+                  {editingCatalogue ? 'Modifier la Fiche Technique' : 'Nouvelle Fiche Technique'}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                {/* Language Tabs */}
+                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('fr')}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === 'fr'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    🇫🇷 Français
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('en')}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === 'en'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    🇬🇧 English
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('ar')}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === 'ar'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    🇸🇦 العربية
+                  </button>
+                </div>
+
+                {/* Content for each language */}
+                {activeTab === 'fr' && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Contenu en Français</h3>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <label htmlFor="title" className="text-right">
-                    Titre
-                  </label>
+                      <label htmlFor="title" className="text-right">Titre</label>
                   <Input
                     id="title"
                     value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="col-span-3"
                   />
                 </div>
-                <div className="mb-4">
-                  <label htmlFor="shortdesc" className="block text-left mb-1">
-                    Courte Description
-                  </label>
-                  <TiptapEditor
-                    content={formData.shortdesc}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, shortdesc: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="description" className="block text-left mb-1">
-                    Description
-                  </label>
-                  <TiptapEditor
-                    content={formData.description}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, description: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="domaine" className="block text-left mb-1">
-                    Domaine
-                  </label>
-                  <TiptapEditor
-                    content={formData.domaine}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, domaine: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="proprietes" className="block text-left mb-1">
-                    Propriétés Physiques
-                  </label>
-                  <TiptapEditor
-                    content={formData.proprietes}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, proprietes: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="preparation" className="block text-left mb-1">
-                    Préparation du support
-                  </label>
-                  <TiptapEditor
-                    content={formData.preparation}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, preparation: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="conditions" className="block text-left mb-1">
-                    Conditions d'application
-                  </label>
-                  <TiptapEditor
-                    content={formData.conditions}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, conditions: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="application" className="block text-left mb-1">
-                    Application
-                  </label>
-                  <TiptapEditor
-                    content={formData.application}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, application: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="consommation" className="block text-left mb-1">
-                    Consommation
-                  </label>
-                  <TiptapEditor
-                    content={formData.consommation}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, consommation: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="nettoyage" className="block text-left mb-1">
-                    Nettoyage du Matériel
-                  </label>
-                  <TiptapEditor
-                    content={formData.nettoyage}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, nettoyage: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="stockage" className="block text-left mb-1">
-                    Stockage
-                  </label>
-                  <TiptapEditor
-                    content={formData.stockage}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, stockage: newContent })
-                    }
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="consignes" className="block text-left mb-1">
-                    Consignes de sécurité
-                  </label>
-                  <TiptapEditor
-                    content={formData.consignes}
-                    onChange={(newContent) =>
-                      setFormData({ ...formData, consignes: newContent })
-                    }
-                  />
-                </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="shortdesc" className="block text-left">Courte Description</label>
+                        <EmojiButton fieldName="shortdesc" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.shortdesc}
+                        onChange={(newContent) => setFormData({ ...formData, shortdesc: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="description" className="block text-left">Description</label>
+                        <EmojiButton fieldName="description" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.description}
+                        onChange={(newContent) => setFormData({ ...formData, description: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="domaine" className="block text-left">Domaine</label>
+                        <EmojiButton fieldName="domaine" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.domaine}
+                        onChange={(newContent) => setFormData({ ...formData, domaine: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="proprietes" className="block text-left">Caractéristiques et Avantages</label>
+                        <EmojiButton fieldName="proprietes" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.proprietes}
+                        onChange={(newContent) => setFormData({ ...formData, proprietes: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="preparation" className="block text-left">Préparation du support</label>
+                        <EmojiButton fieldName="preparation" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.preparation}
+                        onChange={(newContent) => setFormData({ ...formData, preparation: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="conditions" className="block text-left">Conditions d'application</label>
+                        <EmojiButton fieldName="conditions" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.conditions}
+                        onChange={(newContent) => setFormData({ ...formData, conditions: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="application" className="block text-left">Application</label>
+                        <EmojiButton fieldName="application" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.application}
+                        onChange={(newContent) => setFormData({ ...formData, application: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="consommation" className="block text-left">Consommation</label>
+                        <EmojiButton fieldName="consommation" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.consommation}
+                        onChange={(newContent) => setFormData({ ...formData, consommation: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="nettoyage" className="block text-left">Nettoyage du Matériel</label>
+                        <EmojiButton fieldName="nettoyage" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.nettoyage}
+                        onChange={(newContent) => setFormData({ ...formData, nettoyage: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="stockage" className="block text-left">Stockage</label>
+                        <EmojiButton fieldName="stockage" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.stockage}
+                        onChange={(newContent) => setFormData({ ...formData, stockage: newContent })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="consignes" className="block text-left">Consignes de sécurité</label>
+                        <EmojiButton fieldName="consignes" />
+                      </div>
+                      <TiptapEditor
+                        content={formData.consignes}
+                        onChange={(newContent) => setFormData({ ...formData, consignes: newContent })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'en' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium">English Content</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Auto-translate all fields from French to English
+                          const fields = ['title', 'shortdesc', 'description', 'domaine', 'proprietes', 'preparation', 'conditions', 'application', 'consommation', 'nettoyage', 'stockage', 'consignes'];
+                          fields.forEach(field => translateField(field, 'fr', 'en'));
+                        }}
+                        disabled={isTranslating}
+                      >
+                        {isTranslating ? 'Translating...' : '🔄 Auto-translate from French'}
+                      </Button>
+                    </div>
+                                         <div className="grid grid-cols-4 items-center gap-4">
+                       <label className="text-right">Title</label>
+                       <div className="col-span-3 flex gap-2">
+                         <Input
+                           value={formData.title_en}
+                           onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
+                           className="flex-1"
+                         />
+                         <Button
+                           type="button"
+                           variant="outline"
+                           size="sm"
+                           onClick={() => translateField('title', 'fr', 'en')}
+                           disabled={isTranslating}
+                         >
+                           🔄
+                         </Button>
+                       </div>
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Short Description</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="shortdesc_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('shortdesc', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.shortdesc_en}
+                         onChange={(newContent) => setFormData({ ...formData, shortdesc_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Description</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="description_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('description', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.description_en}
+                         onChange={(newContent) => setFormData({ ...formData, description_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Application Domain</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="domaine_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('domaine', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.domaine_en}
+                         onChange={(newContent) => setFormData({ ...formData, domaine_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Characteristics & Advantages</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="proprietes_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('proprietes', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.proprietes_en}
+                         onChange={(newContent) => setFormData({ ...formData, proprietes_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Surface Preparation</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="preparation_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('preparation', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.preparation_en}
+                         onChange={(newContent) => setFormData({ ...formData, preparation_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Application Conditions</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="conditions_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('conditions', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.conditions_en}
+                         onChange={(newContent) => setFormData({ ...formData, conditions_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Application</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="application_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('application', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.application_en}
+                         onChange={(newContent) => setFormData({ ...formData, application_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Consumption</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="consommation_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('consommation', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.consommation_en}
+                         onChange={(newContent) => setFormData({ ...formData, consommation_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Equipment Cleaning</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="nettoyage_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('nettoyage', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.nettoyage_en}
+                         onChange={(newContent) => setFormData({ ...formData, nettoyage_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Storage</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="stockage_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('stockage', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.stockage_en}
+                         onChange={(newContent) => setFormData({ ...formData, stockage_en: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-left">Safety Instructions</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="consignes_en" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('consignes', 'fr', 'en')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.consignes_en}
+                         onChange={(newContent) => setFormData({ ...formData, consignes_en: newContent })}
+                       />
+                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'ar' && (
+                  <div className="space-y-4" dir="rtl">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium">المحتوى العربي</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Auto-translate all fields from French to Arabic
+                          const fields = ['title', 'shortdesc', 'description', 'domaine', 'proprietes', 'preparation', 'conditions', 'application', 'consommation', 'nettoyage', 'stockage', 'consignes'];
+                          fields.forEach(field => translateField(field, 'fr', 'ar'));
+                        }}
+                        disabled={isTranslating}
+                      >
+                        {isTranslating ? 'جاري الترجمة...' : '🔄 ترجمة تلقائية من الفرنسية'}
+                      </Button>
+                    </div>
+                                         <div className="grid grid-cols-4 items-center gap-4">
+                       <label className="text-right">العنوان</label>
+                       <div className="col-span-3 flex gap-2">
+                         <Input
+                           value={formData.title_ar}
+                           onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
+                           className="flex-1"
+                         />
+                         <Button
+                           type="button"
+                           variant="outline"
+                           size="sm"
+                           onClick={() => translateField('title', 'fr', 'ar')}
+                           disabled={isTranslating}
+                         >
+                           🔄
+                         </Button>
+                       </div>
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">الوصف المختصر</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="shortdesc_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('shortdesc', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.shortdesc_ar}
+                         onChange={(newContent) => setFormData({ ...formData, shortdesc_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">الوصف</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="description_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('description', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.description_ar}
+                         onChange={(newContent) => setFormData({ ...formData, description_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">مجال التطبيق</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="domaine_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('domaine', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.domaine_ar}
+                         onChange={(newContent) => setFormData({ ...formData, domaine_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">الخصائص والمزايا</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="proprietes_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('proprietes', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.proprietes_ar}
+                         onChange={(newContent) => setFormData({ ...formData, proprietes_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">تحضير السطح</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="preparation_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('preparation', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.preparation_ar}
+                         onChange={(newContent) => setFormData({ ...formData, preparation_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">شروط التطبيق</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="conditions_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('conditions', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.conditions_ar}
+                         onChange={(newContent) => setFormData({ ...formData, conditions_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">التطبيق</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="application_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('application', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.application_ar}
+                         onChange={(newContent) => setFormData({ ...formData, application_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">الاستهلاك</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="consommation_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('consommation', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.consommation_ar}
+                         onChange={(newContent) => setFormData({ ...formData, consommation_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">تنظيف المعدات</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="nettoyage_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('nettoyage', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.nettoyage_ar}
+                         onChange={(newContent) => setFormData({ ...formData, nettoyage_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">التخزين</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="stockage_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('stockage', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.stockage_ar}
+                         onChange={(newContent) => setFormData({ ...formData, stockage_ar: newContent })}
+                       />
+                     </div>
+                     
+                     <div>
+                       <div className="flex justify-between items-center mb-1">
+                         <label className="block text-right">تعليمات السلامة</label>
+                         <div className="flex gap-2">
+                           <EmojiButton fieldName="consignes_ar" />
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={() => translateField('consignes', 'fr', 'ar')}
+                             disabled={isTranslating}
+                           >
+                             🔄
+                           </Button>
+                         </div>
+                       </div>
+                       <TiptapEditor
+                         content={formData.consignes_ar}
+                         onChange={(newContent) => setFormData({ ...formData, consignes_ar: newContent })}
+                       />
+                     </div>
+                  </div>
+                )}
+
+                {/* Emoji Picker */}
+                {showEmojiPicker && (
+                  <div
+                    ref={emojiPickerRef}
+                    className="fixed z-50"
+                    style={{
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: 350,
+                      maxWidth: '95vw',
+                      borderRadius: 16,
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+                      background: 'var(--background, #fff)'
+                    }}
+                  >
+                    <Picker
+                      data={data}
+                      locale="fr"
+                      theme="auto"
+                      onEmojiSelect={insertEmoji}
+                    />
+                  </div>
+                )}
+
                 <DialogFooter>
                   <Button
                     type="button"
@@ -407,14 +1527,29 @@ export default function AdminCataloguesPage() {
                           >
                             <FiTrash2 className="h-4 w-4" />
                           </Button>
-                          <a
-                            href={`/api/catalogues/${catalogueId}/pdf`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-                          >
-                            <FiDownload className="h-4 w-4" />
-                          </a>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => downloadPDF(catalogueId, catalogue.title, 'fr')}
+                              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-2 py-2"
+                              title="Télécharger en français (HTML to PDF)"
+                            >
+                              FR
+                            </button>
+                            <button
+                              onClick={() => downloadPDF(catalogueId, catalogue.title, 'en')}
+                              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-blue-500 text-white shadow-sm hover:bg-blue-600 h-9 px-2 py-2"
+                              title="Télécharger en anglais (HTML to PDF)"
+                            >
+                              EN
+                            </button>
+                            <button
+                              onClick={() => downloadArabicPDF(catalogueId, catalogue.title)}
+                              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-green-500 text-white shadow-sm hover:bg-green-600 h-9 px-2 py-2"
+                              title="تحميل باللغة العربية (HTML to PDF)"
+                            >
+                              AR
+                            </button>
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -429,7 +1564,7 @@ export default function AdminCataloguesPage() {
       <Dialog open={!!viewingCatalogue} onOpenChange={() => setViewingCatalogue(null)}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-            <DialogTitle>Détails du Catalogue</DialogTitle>
+                            <DialogTitle>Détails de la Fiche Technique</DialogTitle>
               </DialogHeader>
               {viewingCatalogue && (
             <div className="grid gap-4">
@@ -450,7 +1585,7 @@ export default function AdminCataloguesPage() {
                 <p>{viewingCatalogue.domaine}</p>
                   </div>
               <div>
-                <h3 className="font-semibold">Propriétés</h3>
+                <h3 className="font-semibold">Caractéristiques et Avantages</h3>
                 <p>{viewingCatalogue.proprietes}</p>
                   </div>
               <div>
