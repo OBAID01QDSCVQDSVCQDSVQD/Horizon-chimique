@@ -78,9 +78,39 @@ const cleanArabicText = (text: string): string => {
 };
 
 // دالة لإنشاء HTML للعربية مع الحفاظ على تنسيق TipTap
-const generateArabicHTML = (catalogue: any, userLogo?: string): string => {
+const generateArabicHTML = (catalogue: any): string => {
   const title = processArabicHTMLContent(catalogue.title_ar || catalogue.title || 'فيش تقني');
   const shortDesc = processArabicHTMLContent(catalogue.shortdesc_ar || '');
+  
+  // دالة للتحقق من أن المحتوى ليس فارغاً
+  const isContentEmpty = (content: string): boolean => {
+    if (!content) return true;
+    
+    // تنظيف شامل للمحتوى
+    const cleanContent = content
+      // إزالة HTML tags الشائعة الفارغة
+      .replace(/<p[^>]*>\s*<\/p>/gi, '')
+      .replace(/<div[^>]*>\s*<\/div>/gi, '')
+      .replace(/<br[^>]*\/?>/gi, '')
+      .replace(/<hr[^>]*\/?>/gi, '')
+      .replace(/<span[^>]*>\s*<\/span>/gi, '')
+      // إزالة جميع HTML tags
+      .replace(/<[^>]*>/g, '')
+      // إزالة HTML entities
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'")
+      // إزالة المسافات والأسطر الفارغة
+      .replace(/\s+/g, ' ')
+      .replace(/\n+/g, '')
+      .trim();
+      
+    return cleanContent === '' || cleanContent.length === 0;
+  };
   
   const sections = [
     { label: 'المعلومات', field: 'description_ar', content: processArabicHTMLContent(catalogue.description_ar || '') },
@@ -93,7 +123,7 @@ const generateArabicHTML = (catalogue: any, userLogo?: string): string => {
     { label: 'تنظيف المعدات', field: 'nettoyage_ar', content: processArabicHTMLContent(catalogue.nettoyage_ar || '') },
     { label: 'التخزين', field: 'stockage_ar', content: processArabicHTMLContent(catalogue.stockage_ar || '') },
     { label: 'تعليمات السلامة', field: 'consignes_ar', content: processArabicHTMLContent(catalogue.consignes_ar || '') },
-  ].filter(section => section.content.trim() !== '');
+  ].filter(section => !isContentEmpty(section.content));
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -557,6 +587,18 @@ const generateArabicHTML = (catalogue: any, userLogo?: string): string => {
             margin: 0 !important;
             border: none !important;
             outline: none !important;
+            /* حماية إضافية من الإخفاء */
+            pointer-events: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            /* منع التلاعب بالفوتر */
+            transform: none !important;
+            transition: none !important;
+            animation: none !important;
+            /* ضمان الظهور فوق كل شيء */
+            top: auto !important;
         }
         
         .footer-content {
@@ -730,29 +772,13 @@ const generateArabicHTML = (catalogue: any, userLogo?: string): string => {
 </head>
 <body>
     <div class="header">
-        ${userLogo ? `
-            <div class="header-logo">
-                <img src="${userLogo}" alt="شعار الشركة" 
-                     crossorigin="anonymous" 
-                     referrerpolicy="no-referrer"
-                     loading="eager"
-                     style="display: none;"
-                     onload="this.style.display='block'; console.log('شعار محمل بنجاح من:', this.src)" 
-                     onerror="console.error('خطأ في تحميل الشعار من:', this.src); this.style.display='none'; setTimeout(() => { this.parentElement.innerHTML='<div class=\\"header-logo-placeholder\\">HC</div>'; }, 100);">
-                <div class="header-logo-placeholder" style="display: block;">HC</div>
-            </div>
-        ` : `
-            <div class="header-logo">
-                <div class="header-logo-placeholder">HC</div>
-            </div>
-        `}
         <div class="header-content">
             <div class="title">${title}</div>
             <div class="subtitle">البطاقة التقنية / Fiche Technique</div>
         </div>
     </div>
     
-    ${shortDesc ? `<div class="short-desc">${shortDesc}</div>` : ''}
+    ${!isContentEmpty(shortDesc) ? `<div class="short-desc">${shortDesc}</div>` : ''}
     
     ${sections.map(section => `
         <div class="section">
@@ -769,7 +795,7 @@ const generateArabicHTML = (catalogue: any, userLogo?: string): string => {
             </div>
             <div class="footer-section">
                 <span class="footer-icon">📄</span>
-                <span>البطاقة التقنية - ${new Date().toLocaleDateString('en-US')}</span>
+                <span>البطاقة التقنية - ${new Date().toLocaleDateString('fr-FR')}</span>
             </div>
             <div class="footer-section">
                 <span class="footer-icon">📞</span>
@@ -820,24 +846,38 @@ const generateArabicHTML = (catalogue: any, userLogo?: string): string => {
             }
         }
         
-        // دالة لضمان ظهور الفوتر العربي
+        // دالة لضمان ظهور الفوتر العربي مع حماية قوية
         function ensureArabicFooter() {
             const footer = document.querySelector('.footer');
             if (footer) {
-                footer.style.display = 'flex !important';
-                footer.style.visibility = 'visible !important';
-                footer.style.opacity = '1 !important';
-                footer.style.position = 'fixed !important';
-                footer.style.bottom = '0 !important';
-                footer.style.left = '0 !important';
-                footer.style.right = '0 !important';
-                footer.style.zIndex = '9999 !important';
-                footer.style.background = 'linear-gradient(135deg, #8B0000 0%, #DC143C 50%, #FF6B6B 100%) !important';
-                footer.style.color = 'white !important';
-                footer.style.padding = '15px !important';
-                footer.style.fontSize = '12px !important';
-                footer.style.textAlign = 'center !important';
-                footer.style.direction = 'rtl !important';
+                // تطبيق جميع الخصائص بقوة
+                footer.style.setProperty('display', 'flex', 'important');
+                footer.style.setProperty('visibility', 'visible', 'important');
+                footer.style.setProperty('opacity', '1', 'important');
+                footer.style.setProperty('position', 'fixed', 'important');
+                footer.style.setProperty('bottom', '0', 'important');
+                footer.style.setProperty('left', '0', 'important');
+                footer.style.setProperty('right', '0', 'important');
+                footer.style.setProperty('top', 'auto', 'important');
+                footer.style.setProperty('z-index', '99999', 'important');
+                footer.style.setProperty('background', 'linear-gradient(135deg, #8B0000 0%, #DC143C 50%, #FF6B6B 100%)', 'important');
+                footer.style.setProperty('color', 'white', 'important');
+                footer.style.setProperty('padding', '15px', 'important');
+                footer.style.setProperty('font-size', '12px', 'important');
+                footer.style.setProperty('text-align', 'center', 'important');
+                footer.style.setProperty('direction', 'rtl', 'important');
+                footer.style.setProperty('height', '60px', 'important');
+                footer.style.setProperty('width', '100%', 'important');
+                footer.style.setProperty('margin', '0', 'important');
+                footer.style.setProperty('border', 'none', 'important');
+                footer.style.setProperty('outline', 'none', 'important');
+                footer.style.setProperty('transform', 'none', 'important');
+                footer.style.setProperty('transition', 'none', 'important');
+                footer.style.setProperty('animation', 'none', 'important');
+                
+                // منع إزالة الفوتر
+                footer.setAttribute('data-protected', 'true');
+                footer.classList.add('protected-footer');
             }
         }
         
@@ -906,9 +946,42 @@ const generateArabicHTML = (catalogue: any, userLogo?: string): string => {
             }
         }
         
+        // حماية الفوتر العربي من الإزالة
+        function protectArabicFooter() {
+            const footer = document.querySelector('.footer');
+            if (footer && !footer.hasAttribute('data-protected')) {
+                // إعادة إنشاء الفوتر إذا تم حذفه
+                const newFooter = footer.cloneNode(true);
+                footer.parentNode.appendChild(newFooter);
+                ensureArabicFooter();
+            } else if (!footer) {
+                // إعادة إنشاء الفوتر بالكامل إذا لم يعد موجوداً
+                const footerHTML = \`
+                <div class="footer">
+                    <div class="footer-content">
+                        <div class="footer-section">
+                            <span class="footer-icon">🌐</span>
+                            <span>horizon-chimique.tn</span>
+                        </div>
+                        <div class="footer-section">
+                            <span class="footer-icon">📄</span>
+                            <span>البطاقة التقنية - \${new Date().toLocaleDateString('fr-FR')}</span>
+                        </div>
+                        <div class="footer-section">
+                            <span class="footer-icon">📞</span>
+                            <span>00216520033</span>
+                        </div>
+                    </div>
+                </div>\`;
+                document.body.insertAdjacentHTML('beforeend', footerHTML);
+                ensureArabicFooter();
+            }
+        }
+
         // تنظيف شامل كل 500ms للتأكد التام
         setInterval(function() {
             removeAds();
+            protectArabicFooter();
             ensureArabicFooter();
             forceFooterDisplay();
             
@@ -923,7 +996,8 @@ const generateArabicHTML = (catalogue: any, userLogo?: string): string => {
                     // تأكد أنه ليس الفوتر
                     if (!el.classList.contains('footer') && 
                         !el.classList.contains('footer-content') && 
-                        !el.classList.contains('footer-section')) {
+                        !el.classList.contains('footer-section') &&
+                        !el.hasAttribute('data-protected')) {
                         try {
                             el.remove();
                         } catch(e) {}
@@ -971,37 +1045,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-        // جلب شعار المستخدم من قاعدة البيانات
-    let userLogo = null; // لا نستخدم شعار احتياطي، سنعرض HC فقط
-    
-    try {
-      // البحث عن المستخدم الإداري الذي لديه شعار الشركة
-      const adminUser = await User.findOne({ 
-        role: 'ADMIN', 
-        companyLogo: { $exists: true, $nin: [null, ''] }
-      }).select('companyLogo');
-      
-      if (adminUser?.companyLogo) {
-        // التحقق من أن الرابط يبدأ بـ https والتأكد من صحة الرابط
-        if (adminUser.companyLogo.startsWith('https://') && 
-            (adminUser.companyLogo.includes('cloudinary.com') || 
-             adminUser.companyLogo.includes('res.cloudinary.com'))) {
-          // إضافة معاملات Cloudinary لضمان التحميل السريع
-          userLogo = adminUser.companyLogo.includes('?') 
-            ? `${adminUser.companyLogo}&q_auto,f_auto,w_200,h_150,c_fit`
-            : `${adminUser.companyLogo}?q_auto,f_auto,w_200,h_150,c_fit`;
-          console.log('تم العثور على شعار المستخدم:', userLogo);
-        } else {
-          console.log('رابط الشعار غير صالح أو غير آمن:', adminUser.companyLogo);
-        }
-      } else {
-        console.log('لم يتم العثور على مستخدم إداري مع شعار');
-      }
-    } catch (userError) {
-      console.error('خطأ في جلب شعار المستخدم:', userError);
-    }
-
-    const htmlContent = generateArabicHTML(catalogue, userLogo || undefined);
+    const htmlContent = generateArabicHTML(catalogue);
     
     // إرجاع HTML للمعاينة أو التحويل في المتصفح
     return new NextResponse(htmlContent, {

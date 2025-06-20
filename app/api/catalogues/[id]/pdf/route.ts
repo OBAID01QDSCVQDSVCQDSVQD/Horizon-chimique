@@ -7,87 +7,9 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// دالة لمعالجة النص مع الحفاظ على تنسيق TipTap
-const processHTMLContent = (text: string): string => {
-  if (!text) return '';
-  
-  // تنظيف أساسي مع الحفاظ على التنسيق
-  let processedText = text
-    // تحويل HTML entities
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#39;/g, "'")
-    .replace(/&#x27;/g, "'")
-    .replace(/&laquo;/g, '«')
-    .replace(/&raquo;/g, '»')
-    .replace(/&eacute;/g, 'é')
-    .replace(/&egrave;/g, 'è')
-    .replace(/&agrave;/g, 'à')
-    .replace(/&ccedil;/g, 'ç')
-    .replace(/&ucirc;/g, 'û')
-    .replace(/&ecirc;/g, 'ê')
-    .replace(/&ocirc;/g, 'ô')
-    .replace(/&acirc;/g, 'â')
-    // تنظيف أساسي للمسافات الزائدة
-    .replace(/\s+/g, ' ')
-    .trim();
-    
-  return processedText;
-};
 
-// دالة للنص العادي (للاستخدام في الأماكن التي لا تدعم HTML)
-const cleanText = (text: string): string => {
-  if (!text) return '';
-  
-  // إزالة HTML tags مع الحفاظ على المحتوى
-  let cleanText = text
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
-    .replace(/<p[^>]*>/gi, '')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<div[^>]*>/gi, '')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<h[1-6][^>]*>/gi, '')
-    .replace(/<\/h[1-6]>/gi, '\n')
-    .replace(/<li[^>]*>/gi, '• ')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<ul[^>]*>|<\/ul>/gi, '')
-    .replace(/<ol[^>]*>|<\/ol>/gi, '')
-    .replace(/<strong[^>]*>|<\/strong>/gi, '')
-    .replace(/<b[^>]*>|<\/b>/gi, '')
-    .replace(/<em[^>]*>|<\/em>/gi, '')
-    .replace(/<i[^>]*>|<\/i>/gi, '')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#39;/g, "'")
-    .replace(/&#x27;/g, "'")
-    .replace(/&laquo;/g, '«')
-    .replace(/&raquo;/g, '»')
-    .replace(/&eacute;/g, 'é')
-    .replace(/&egrave;/g, 'è')
-    .replace(/&agrave;/g, 'à')
-    .replace(/&ccedil;/g, 'ç')
-    .replace(/&ucirc;/g, 'û')
-    .replace(/&ecirc;/g, 'ê')
-    .replace(/&ocirc;/g, 'ô')
-    .replace(/&acirc;/g, 'â')
-    .replace(/\n\s*\n\s*\n/g, '\n\n')
-    .replace(/^\s+|\s+$/g, '')
-    .trim();
-    
-  return cleanText;
-};
 
-// دالة للحصول على المحتوى حسب اللغة مع الحفاظ على HTML
+// دالة للحصول على المحتوى حسب اللغة بدون أي معالجة
 const getContentByLanguage = (catalogue: any, field: string, lang: string = 'fr'): string => {
   let content = '';
   
@@ -99,20 +21,7 @@ const getContentByLanguage = (catalogue: any, field: string, lang: string = 'fr'
     content = catalogue[field] || '';
   }
   
-  // تنظيف المحتوى والتحقق من وجود محتوى حقيقي
-  if (!content || content === null || content === undefined) {
-    return '';
-  }
-  
-  // إزالة HTML tags للتحقق من وجود محتوى نصي
-  const textContent = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
-  
-  // إذا لم يكن هناك محتوى نصي حقيقي، إرجاع فارغ
-  if (!textContent || textContent === '' || textContent === ' ') {
-    return '';
-  }
-  
-  return processHTMLContent(content);
+  return content || '';
 };
 
 // دالة للحصول على الترجمات
@@ -145,6 +54,20 @@ const getTranslations = (lang: string) => {
       stockage: 'Storage',
       consignes: 'Safety Instructions',
       footer: 'Technical Sheet'
+    },
+    ar: {
+      subtitle: 'البطاقة التقنية / Technical Sheet',
+      information: 'معلومات',
+      domaine: 'مجال التطبيق',
+      proprietes: 'الخصائص والمزايا',
+      preparation: 'تحضير السطح',
+      conditions: 'شروط التطبيق',
+      application: 'التطبيق',
+      consommation: 'الاستهلاك',
+      nettoyage: 'تنظيف المعدات',
+      stockage: 'التخزين',
+      consignes: 'تعليمات السلامة',
+      footer: 'البطاقة التقنية'
     }
   };
   
@@ -168,12 +91,26 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
     { label: t.nettoyage, field: 'nettoyage', content: getContentByLanguage(catalogue, 'nettoyage', lang) },
     { label: t.stockage, field: 'stockage', content: getContentByLanguage(catalogue, 'stockage', lang) },
     { label: t.consignes, field: 'consignes', content: getContentByLanguage(catalogue, 'consignes', lang) },
-  ].filter(section => section.content.trim() !== '');
+  ].filter(section => {
+    if (!section.content) return false;
+    // إزالة HTML tags والمسافات للتحقق من وجود محتوى فعلي
+    const textContent = section.content
+      .replace(/<[^>]*>/g, '')  // إزالة HTML tags
+      .replace(/&nbsp;/g, ' ')  // تحويل &nbsp; إلى مسافة
+      .replace(/&[a-zA-Z0-9#]+;/g, '')  // إزالة HTML entities
+      .trim();
+    return textContent !== '' && textContent.length > 0;
+  });
 
-  const fontFamily = "'Inter', 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-
+  const isRTL = lang === 'ar';
+  const direction = isRTL ? 'rtl' : 'ltr';
+  
+  const fontFamily = isRTL 
+    ? "'Noto Sans Arabic', 'Inter', 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    : "'Inter', 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+  
   return `<!DOCTYPE html>
-<html dir="ltr" lang="${lang}">
+<html dir="${direction}" lang="${lang}">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -210,6 +147,7 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
         
         * {
             margin: 0;
@@ -219,8 +157,8 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
         
         body {
             font-family: ${fontFamily};
-            direction: ltr;
-            text-align: left;
+            direction: ${direction};
+            text-align: ${isRTL ? 'right' : 'left'};
             background: white;
             color: #333;
             line-height: 1.8;
@@ -240,50 +178,51 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             margin-bottom: 35px;
             background: linear-gradient(135deg, #8B0000 0%, #DC143C 50%, #FF6B6B 100%);
             color: white;
-            padding: 40px 30px;
+            padding: 30px 20px;
             border-radius: 15px;
             position: relative;
             overflow: hidden;
             box-shadow: 0 8px 32px rgba(139, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            height: 100px;
         }
         
         .header-content {
-            flex: 1;
-            text-align: center;
-            z-index: 2;
-            position: relative;
+            position: absolute !important;
+            top: 50% !important;
+            ${isRTL ? 'right: 20px !important; left: 130px !important;' : 'left: 130px !important; right: 20px !important;'}
+            transform: translateY(-50%) !important;
+            text-align: center !important;
+            z-index: 2 !important;
+            width: calc(100% - 150px) !important;
         }
         
         .header-logo {
             position: absolute !important;
-            left: 30px !important;
+            ${isRTL ? 'right: 20px !important;' : 'left: 20px !important;'}
             top: 50% !important;
             transform: translateY(-50%) !important;
             z-index: 9999 !important;
             width: auto !important;
             height: auto !important;
-            max-width: 150px !important;
+            max-width: 100px !important;
             max-height: 50px !important;
-            min-width: 80px !important;
-            min-height: 30px !important;
+            min-width: 60px !important;
+            min-height: 25px !important;
             border-radius: 8px !important;
-            border: 2px solid rgba(255, 255, 255, 0.8) !important;
-            background: rgba(255, 255, 255, 0.9) !important;
-            backdrop-filter: blur(3px) !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+            border: 2px solid rgba(255, 255, 255, 0.9) !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(5px) !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
             overflow: hidden !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            padding: 3px 8px !important;
+            padding: 3px 6px !important;
         }
         
         .header-logo img {
-            max-width: 140px !important;
-            max-height: 45px !important;
+            max-width: 90px !important;
+            max-height: 40px !important;
             width: auto !important;
             height: auto !important;
             object-fit: contain !important;
@@ -339,27 +278,35 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
         }
         
         .title {
-            font-size: 32px;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 15px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            hyphens: auto;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            position: relative;
-            z-index: 2;
-            letter-spacing: 0.5px;
+            font-size: ${isRTL ? '20px' : '22px'} !important;
+            font-weight: 800 !important;
+            color: white !important;
+            margin: 0 !important;
+            margin-bottom: 5px !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            hyphens: auto !important;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+            z-index: 2 !important;
+            letter-spacing: ${isRTL ? '0px' : '0.1px'} !important;
+            text-align: center !important;
+            line-height: 1.1 !important;
+            width: 100% !important;
+            display: block !important;
         }
         
         .subtitle {
-            font-size: 16px;
-            color: rgba(255,255,255,0.9);
-            font-weight: 500;
-            position: relative;
-            z-index: 2;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-            letter-spacing: 0.3px;
+            font-size: ${isRTL ? '13px' : '14px'} !important;
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500 !important;
+            z-index: 2 !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2) !important;
+            letter-spacing: ${isRTL ? '0px' : '0.2px'} !important;
+            text-align: center !important;
+            line-height: 1.2 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            display: block !important;
         }
         
         .short-desc {
@@ -373,11 +320,12 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             overflow-wrap: break-word;
             white-space: pre-wrap;
             hyphens: auto;
-            text-align: justify;
+            text-align: ${isRTL ? 'right' : 'justify'};
             position: relative;
             border: 1px solid #e9ecef;
             box-shadow: 0 4px 16px rgba(0,0,0,0.1);
             line-height: 1.7;
+            direction: ${direction};
         }
         
         .short-desc::before {
@@ -456,12 +404,13 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             overflow-wrap: break-word;
             white-space: pre-wrap;
             hyphens: auto;
-            text-align: justify;
+            text-align: ${isRTL ? 'right' : 'justify'};
             word-break: break-word;
             max-width: 100%;
             overflow-wrap: anywhere;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             position: relative;
+            direction: ${direction};
         }
         
         .section-content::before {
@@ -476,113 +425,110 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
         }
         
         .section-content p {
-            margin-bottom: 10px;
-            word-spacing: 0.1em;
-            letter-spacing: 0.02em;
+            margin: 0;
+            padding: 0;
+            word-spacing: normal;
+            letter-spacing: normal;
         }
         
-        /* دعم تنسيق TipTap */
+        /* إزالة تنسيق العناوين - تظهر كما هي */
         .section-content h1, .section-content h2, .section-content h3, 
         .section-content h4, .section-content h5, .section-content h6 {
-            font-weight: bold;
-            margin: 15px 0 10px 0;
-            color: #003366;
-            line-height: 1.4;
+            font-weight: inherit;
+            margin: 0;
+            padding: 0;
+            color: inherit;
+            line-height: inherit;
+            font-size: inherit;
         }
-        
-        .section-content h1 { font-size: 20px; }
-        .section-content h2 { font-size: 18px; }
-        .section-content h3 { font-size: 16px; }
-        .section-content h4 { font-size: 15px; }
-        .section-content h5 { font-size: 14px; }
-        .section-content h6 { font-size: 13px; }
         
         .section-content ul, .section-content ol {
-            margin: 10px 0;
-            padding-left: 25px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
         }
         
-        .section-content ul li {
-            list-style-type: disc;
-            margin-bottom: 5px;
-            line-height: 1.6;
+        .section-content ul li, .section-content ol li {
+            list-style: none;
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            line-height: inherit;
         }
         
-        .section-content ol li {
-            list-style-type: decimal;
-            margin-bottom: 5px;
-            line-height: 1.6;
+        .section-content ul li::before, .section-content ol li::before {
+            display: none !important;
+            content: none !important;
         }
         
         .section-content strong, .section-content b {
-            font-weight: bold;
-            color: #003366;
+            font-weight: inherit;
+            color: inherit;
         }
         
         .section-content em, .section-content i {
-            font-style: italic;
+            font-style: inherit;
         }
         
         .section-content u {
-            text-decoration: underline;
+            text-decoration: inherit;
         }
         
         .section-content blockquote {
-            border-left: 4px solid #0066cc;
-            padding-left: 15px;
-            margin: 15px 0;
-            font-style: italic;
-            color: #555;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font-style: inherit;
+            color: inherit;
         }
         
         .section-content code {
-            background-color: #f1f3f4;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
+            background: inherit;
+            padding: 0;
+            border: none;
+            font-family: inherit;
+            font-size: inherit;
         }
         
         .section-content pre {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 15px;
-            margin: 15px 0;
-            overflow-x: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
+            background: inherit;
+            border: none;
+            padding: 0;
+            margin: 0;
+            overflow: visible;
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
         }
         
         .section-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
+            width: auto;
+            border-collapse: separate;
+            margin: 0;
+            border: none;
         }
         
         .section-content table th,
         .section-content table td {
-            border: 1px solid #dee2e6;
-            padding: 8px 12px;
-            text-align: left;
+            border: none;
+            padding: 0;
+            text-align: inherit;
         }
         
         .section-content table th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            color: #003366;
+            background: inherit;
+            font-weight: inherit;
+            color: inherit;
         }
         
         .section-content a {
-            color: #0066cc;
-            text-decoration: underline;
+            color: inherit;
+            text-decoration: inherit;
         }
         
         .section-content hr {
             border: none;
-            border-top: 2px solid #dee2e6;
-            margin: 20px 0;
+            margin: 0;
         }
         
         .footer {
@@ -611,6 +557,24 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             print-color-adjust: exact !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            /* حماية إضافية من الإخفاء */
+            pointer-events: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            /* منع التلاعب بالفوتر */
+            transform: none !important;
+            transition: none !important;
+            animation: none !important;
+            /* ضمان عدم التداخل */
+            margin: 0 !important;
+            border: none !important;
+            outline: none !important;
+            /* ضمان الظهور فوق كل شيء */
+            position: fixed !important;
+            top: auto !important;
+            bottom: 0 !important;
         }
         
         .footer-content {
@@ -619,6 +583,8 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             align-items: center;
             width: 100%;
             padding: 0 20px;
+            direction: ${direction};
+            ${isRTL ? 'flex-direction: row-reverse;' : ''}
         }
         
         .footer-section {
@@ -695,6 +661,8 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
                 align-items: center !important;
                 width: 100% !important;
                 padding: 0 20px !important;
+                direction: ${direction} !important;
+                ${isRTL ? 'flex-direction: row-reverse !important;' : ''}
             }
             
             .footer-section {
@@ -779,7 +747,7 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
           : ``
         }
         <div class="header-content">
-            ${title && title.trim() !== '' ? `<div class="title">${title}</div>` : ''}
+            <div class="title">${title || ''}</div>
             <div class="subtitle">${t.subtitle}</div>
         </div>
     </div>
@@ -801,11 +769,11 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             </div>
             <div class="footer-section">
                 <span class="footer-icon">📄</span>
-                <span>${t.footer} - ${new Date().toLocaleDateString('en-US')}</span>
+                <span>${t.footer} - ${new Date().toLocaleDateString('fr-FR')}</span>
             </div>
             <div class="footer-section">
                 <span class="footer-icon">📞</span>
-                <span>00216520033</span>
+                <span>${isRTL ? '٠٠٢١٦٥٢٠٠٣٣' : '00216520033'}</span>
             </div>
         </div>
     </div>
@@ -852,23 +820,37 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             }
         }
         
-        // دالة لضمان ظهور الفوتر
+        // دالة لضمان ظهور الفوتر مع حماية قوية
         function ensureFooter() {
             const footer = document.querySelector('.footer');
             if (footer) {
-                footer.style.display = 'flex !important';
-                footer.style.visibility = 'visible !important';
-                footer.style.opacity = '1 !important';
-                footer.style.position = 'fixed !important';
-                footer.style.bottom = '0 !important';
-                footer.style.left = '0 !important';
-                footer.style.right = '0 !important';
-                footer.style.zIndex = '9999 !important';
-                footer.style.background = 'linear-gradient(135deg, #8B0000 0%, #DC143C 50%, #FF6B6B 100%) !important';
-                footer.style.color = 'white !important';
-                footer.style.padding = '15px !important';
-                footer.style.fontSize = '12px !important';
-                footer.style.textAlign = 'center !important';
+                // تطبيق جميع الخصائص بقوة
+                footer.style.setProperty('display', 'flex', 'important');
+                footer.style.setProperty('visibility', 'visible', 'important');
+                footer.style.setProperty('opacity', '1', 'important');
+                footer.style.setProperty('position', 'fixed', 'important');
+                footer.style.setProperty('bottom', '0', 'important');
+                footer.style.setProperty('left', '0', 'important');
+                footer.style.setProperty('right', '0', 'important');
+                footer.style.setProperty('top', 'auto', 'important');
+                footer.style.setProperty('z-index', '99999', 'important');
+                footer.style.setProperty('background', 'linear-gradient(135deg, #8B0000 0%, #DC143C 50%, #FF6B6B 100%)', 'important');
+                footer.style.setProperty('color', 'white', 'important');
+                footer.style.setProperty('padding', '15px', 'important');
+                footer.style.setProperty('font-size', '12px', 'important');
+                footer.style.setProperty('text-align', 'center', 'important');
+                footer.style.setProperty('height', '60px', 'important');
+                footer.style.setProperty('width', '100%', 'important');
+                footer.style.setProperty('margin', '0', 'important');
+                footer.style.setProperty('border', 'none', 'important');
+                footer.style.setProperty('outline', 'none', 'important');
+                footer.style.setProperty('transform', 'none', 'important');
+                footer.style.setProperty('transition', 'none', 'important');
+                footer.style.setProperty('animation', 'none', 'important');
+                
+                // منع إزالة الفوتر
+                footer.setAttribute('data-protected', 'true');
+                footer.classList.add('protected-footer');
             }
         }
         
@@ -949,9 +931,44 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             footerCheck.style.width = '100%';
         }
         
+        // حماية الفوتر من الإزالة
+        function protectFooter() {
+            const footer = document.querySelector('.footer');
+            if (footer && !footer.hasAttribute('data-protected')) {
+                // إعادة إنشاء الفوتر إذا تم حذفه
+                const newFooter = footer.cloneNode(true);
+                footer.parentNode.appendChild(newFooter);
+                ensureFooter();
+            } else if (!footer) {
+                // إعادة إنشاء الفوتر بالكامل إذا لم يعد موجوداً
+                const footerHTML = \`
+                <div class="footer">
+                    <div class="footer-content">
+                        <div class="footer-section">
+                            <span class="footer-icon">🌐</span>
+                            <span>horizon-chimique.tn</span>
+                        </div>
+                        <div class="footer-section">
+                            <span class="footer-icon">📄</span>
+                            <span>Fiche Technique - \${new Date().toLocaleDateString('fr-FR')}</span>
+                        </div>
+                        <div class="footer-section">
+                            <span class="footer-icon">📞</span>
+                            <span>00216520033</span>
+                        </div>
+                    </div>
+                </div>\`;
+                document.body.insertAdjacentHTML('beforeend', footerHTML);
+                ensureFooter();
+            }
+        }
+
         // تنظيف شامل كل 500ms للتأكد التام
         setInterval(function() {
             removeAds();
+            protectFooter();
+            ensureFooter();
+            
             // إزالة أي عناصر جديدة قد تظهر
             const allElements = document.querySelectorAll('*');
             allElements.forEach(el => {
@@ -960,9 +977,15 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
                 if (className.includes('toolbar') || className.includes('ai-') || 
                     id.includes('toolbar') || id.includes('ai-') ||
                     className.includes('popup') || className.includes('modal')) {
-                    try {
-                        el.remove();
-                    } catch(e) {}
+                    // تأكد أنه ليس الفوتر
+                    if (!el.classList.contains('footer') && 
+                        !el.classList.contains('footer-content') && 
+                        !el.classList.contains('footer-section') &&
+                        !el.hasAttribute('data-protected')) {
+                        try {
+                            el.remove();
+                        } catch(e) {}
+                    }
                 }
             });
             
@@ -1004,7 +1027,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     }
 
         // جلب شعار المستخدم من قاعدة البيانات
-    let userLogo = null; // لا نستخدم شعار احتياطي، سنعرض HC فقط
+    let userLogo = null; // لا نستخدم شعار احتياطي
     
     try {
       // البحث عن المستخدم الإداري الذي لديه شعار الشركة
