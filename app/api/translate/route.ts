@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// تعيين timeout للدالة (مهم لـ Vercel)
+export const maxDuration = 30;
+
 export async function POST(request: NextRequest) {
   try {
     const { text, fromLang, toLang, context } = await request.json();
@@ -10,6 +13,20 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // التحقق من وجود مفتاح OpenAI
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error('OPENAI_API_KEY غير موجود في متغيرات البيئة');
+      console.error('متغيرات البيئة المتاحة:', Object.keys(process.env).filter(key => key.includes('OPENAI')));
+      return NextResponse.json(
+        { error: 'مفتاح OpenAI غير مُعرَّف في الخادم' },
+        { status: 500 }
+      );
+    }
+
+    console.log('بدء الترجمة من', fromLang, 'إلى', toLang);
+    console.log('API Key موجود:', apiKey ? 'نعم' : 'لا');
 
     // تحديد أسماء اللغات للـ prompt
     const langNames = {
@@ -52,12 +69,16 @@ ${context ? `السياق: هذا النص من قسم "${context}" في فيش 
           }
         ],
         max_tokens: 1000,
-        temperature: 0.3, // قليل للحصول على ترجمة متسقة
+        temperature: 0.3,
       }),
     });
 
+    console.log('OpenAI Response Status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorData = await response.text();
+      console.error('OpenAI API Error:', response.status, errorData);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
     }
 
     const data = await response.json();
