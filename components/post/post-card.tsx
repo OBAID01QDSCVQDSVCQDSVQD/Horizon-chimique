@@ -238,12 +238,12 @@ export default function PostCard({ post, onComment }: PostCardProps) {
       })
       if (response.ok) {
         await refreshComments()
-        toast.success('تم حذف التعليق بنجاح')
+        toast.success('Commentaire supprimé avec succès')
       } else {
-        toast.error('حدث خطأ أثناء حذف التعليق')
+        toast.error('Erreur lors de la suppression du commentaire')
       }
     } catch (error) {
-      toast.error('حدث خطأ أثناء حذف التعليق')
+      toast.error('Erreur lors de la suppression du commentaire')
     }
     setShowDeleteModal(false)
     setCommentToDelete(null)
@@ -260,12 +260,12 @@ export default function PostCard({ post, onComment }: PostCardProps) {
       })
       if (response.ok) {
         await refreshComments()
-        toast.success('تم تعديل التعليق بنجاح')
+        toast.success('Commentaire modifié avec succès')
       } else {
-        toast.error('حدث خطأ أثناء تعديل التعليق')
+        toast.error('Erreur lors de la modification du commentaire')
       }
     } catch (error) {
-      toast.error('حدث خطأ أثناء تعديل التعليق')
+      toast.error('Erreur lors de la modification du commentaire')
     }
     setShowEditModal(false)
     setCommentToEdit(null)
@@ -293,7 +293,7 @@ export default function PostCard({ post, onComment }: PostCardProps) {
       window.location.href = '/posts'
     } catch (error) {
       console.error('Error deleting post:', error)
-      toast.error('حدث خطأ أثناء حذف المنشور')
+      toast.error('Erreur lors de la suppression de la publication')
     }
   }
 
@@ -317,7 +317,7 @@ export default function PostCard({ post, onComment }: PostCardProps) {
       window.location.reload()
     } catch (error) {
       console.error('Error updating post:', error)
-      toast.error('حدث خطأ أثناء تعديل المنشور')
+      toast.error('Erreur lors de la modification de la publication')
     }
   }
 

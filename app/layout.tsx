@@ -16,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr" className="w-full overflow-x-hidden">
-      <body className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <html lang="fr" className="w-full overflow-x-hidden" suppressHydrationWarning>
+      <body className="min-h-screen bg-gray-50 dark:bg-gray-900" suppressHydrationWarning>
         <ClientProviders>
           <TopHeader />
           <Header />

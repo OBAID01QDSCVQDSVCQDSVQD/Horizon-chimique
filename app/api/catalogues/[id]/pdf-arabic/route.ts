@@ -26,8 +26,8 @@ const processArabicHTMLContent = (text: string): string => {
     .replace(/&#x27;/g, "'")
     .replace(/&laquo;/g, '«')
     .replace(/&raquo;/g, '»')
-    // إزالة الأحرف الغريبة والرموز غير المدعومة مع الحفاظ على HTML
-    .replace(/[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0020-\u007E\u00A0-\u00FF\n\r\t<>\/="']/g, '')
+    // إزالة الأحرف الغريبة والرموز غير المدعومة مع الحفاظ على HTML والإيموجي
+    .replace(/[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0020-\u007E\u00A0-\u00FF\n\r\t<>\/="'\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F910}-\u{1F96B}\u{1F980}-\u{1F9E0}]/gu, '')
     // تنظيف أساسي للمسافات الزائدة
     .replace(/\s+/g, ' ')
     .trim();
@@ -49,7 +49,7 @@ const cleanArabicText = (text: string): string => {
     .replace(/<\/div>/gi, '\n')
     .replace(/<h[1-6][^>]*>/gi, '')
     .replace(/<\/h[1-6]>/gi, '\n')
-    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<li[^>]*>/gi, '')
     .replace(/<\/li>/gi, '\n')
     .replace(/<ul[^>]*>|<\/ul>/gi, '')
     .replace(/<ol[^>]*>|<\/ol>/gi, '')
@@ -68,8 +68,8 @@ const cleanArabicText = (text: string): string => {
     .replace(/&#x27;/g, "'")
     .replace(/&laquo;/g, '«')
     .replace(/&raquo;/g, '»')
-    // إزالة الأحرف الغريبة والرموز غير المدعومة
-    .replace(/[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0020-\u007E\u00A0-\u00FF\n\r\t]/g, '')
+    // إزالة الأحرف الغريبة والرموز غير المدعومة مع الحفاظ على الإيموجي
+    .replace(/[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0020-\u007E\u00A0-\u00FF\n\r\t\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F910}-\u{1F96B}\u{1F980}-\u{1F9E0}]/gu, '')
     .replace(/\n\s*\n\s*\n/g, '\n\n')
     .replace(/^\s+|\s+$/g, '')
     .trim();
@@ -178,6 +178,7 @@ const generateArabicHTML = (catalogue: any): string => {
             color: #333;
             line-height: 1.8;
             padding: 40px;
+            padding-bottom: 100px; /* مساحة إضافية للفوتر */
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
@@ -187,6 +188,8 @@ const generateArabicHTML = (catalogue: any): string => {
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            /* دعم الإيموجي في النص العربي */
+            font-feature-settings: "liga" 1, "kern" 1;
         }
         
         .header {
@@ -320,7 +323,7 @@ const generateArabicHTML = (catalogue: any): string => {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
             padding: 25px 30px;
             border-radius: 12px;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             font-size: 15px;
             color: #2c3e50;
             word-wrap: break-word;
@@ -363,6 +366,11 @@ const generateArabicHTML = (catalogue: any): string => {
             margin-bottom: 30px;
             page-break-inside: avoid;
             position: relative;
+        }
+        
+        /* إضافة مساحة إضافية للقسم الأخير */
+        .section:last-child {
+            margin-bottom: 80px;
         }
         
         .section-title {
@@ -441,6 +449,16 @@ const generateArabicHTML = (catalogue: any): string => {
             letter-spacing: 0.02em;
         }
         
+        /* دعم الإيموجي في النص العربي */
+        .section-content {
+            font-family: 'Noto Sans Arabic', 'Cairo', 'Tahoma', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif;
+        }
+        
+        /* ضمان ظهور الإيموجي في النص */
+        .section-content * {
+            font-family: inherit;
+        }
+        
         /* دعم تنسيق TipTap للعربية */
         .section-content h1, .section-content h2, .section-content h3, 
         .section-content h4, .section-content h5, .section-content h6 {
@@ -465,14 +483,14 @@ const generateArabicHTML = (catalogue: any): string => {
         }
         
         .section-content ul li {
-            list-style-type: disc;
+            list-style-type: none;
             margin-bottom: 5px;
             line-height: 1.6;
             text-align: right;
         }
         
         .section-content ol li {
-            list-style-type: arabic-indic;
+            list-style-type: none;
             margin-bottom: 5px;
             line-height: 1.6;
             text-align: right;
@@ -480,7 +498,315 @@ const generateArabicHTML = (catalogue: any): string => {
         
         .section-content strong, .section-content b {
             font-weight: bold;
-            color: #003366;
+        }
+        
+        /* دعم ألوان TipTap للعربية - إزالة أي تداخل */
+        .section-content [style*="color"] {
+            /* الحفاظ على اللون الأصلي من TipTap */
+        }
+        
+        .section-content span[style*="color"] {
+            /* الحفاظ على اللون الأصلي من TipTap */
+        }
+        
+        .section-content p[style*="color"] {
+            /* الحفاظ على اللون الأصلي من TipTap */
+        }
+        
+        .section-content div[style*="color"] {
+            /* الحفاظ على اللون الأصلي من TipTap */
+        }
+        
+        /* دعم ألوان الخلفية من TipTap */
+        .section-content [style*="background-color"] {
+            /* الحفاظ على لون الخلفية الأصلي من TipTap */
+        }
+        
+        .section-content span[style*="background-color"] {
+            /* الحفاظ على لون الخلفية الأصلي من TipTap */
+        }
+        
+        .section-content p[style*="background-color"] {
+            /* الحفاظ على لون الخلفية الأصلي من TipTap */
+        }
+        
+        .section-content div[style*="background-color"] {
+            /* الحفاظ على لون الخلفية الأصلي من TipTap */
+        }
+        
+        /* دعم الألوان المباشرة من style attributes */
+        .section-content [style*="color: rgb"] {
+            /* الحفاظ على الألوان RGB من TipTap */
+        }
+        
+        .section-content [style*="color: #"] {
+            /* الحفاظ على الألوان HEX من TipTap */
+        }
+        
+        .section-content [style*="background-color: rgb"] {
+            /* الحفاظ على ألوان خلفية RGB من TipTap */
+        }
+        
+        .section-content [style*="background-color: #"] {
+            /* الحفاظ على ألوان خلفية HEX من TipTap */
+        }
+        
+        /* دعم ألوان TipTap المباشرة للعربية */
+        .section-content [style*="color: red"],
+        .section-content [style*="color: #ff0000"],
+        .section-content [style*="color: rgb(255, 0, 0)"] {
+            color: #dc2626 !important;
+        }
+        
+        .section-content [style*="color: blue"],
+        .section-content [style*="color: #0000ff"],
+        .section-content [style*="color: rgb(0, 0, 255)"] {
+            color: #3b82f6 !important;
+        }
+        
+        .section-content [style*="color: green"],
+        .section-content [style*="color: #00ff00"],
+        .section-content [style*="color: rgb(0, 255, 0)"] {
+            color: #10b981 !important;
+        }
+        
+        .section-content [style*="color: yellow"],
+        .section-content [style*="color: #ffff00"],
+        .section-content [style*="color: rgb(255, 255, 0)"] {
+            color: #f59e0b !important;
+        }
+        
+        .section-content [style*="color: purple"],
+        .section-content [style*="color: #800080"],
+        .section-content [style*="color: rgb(128, 0, 128)"] {
+            color: #8b5cf6 !important;
+        }
+        
+        .section-content [style*="color: orange"],
+        .section-content [style*="color: #ffa500"],
+        .section-content [style*="color: rgb(255, 165, 0)"] {
+            color: #f97316 !important;
+        }
+        
+        .section-content [style*="color: pink"],
+        .section-content [style*="color: #ffc0cb"],
+        .section-content [style*="color: rgb(255, 192, 203)"] {
+            color: #ec4899 !important;
+        }
+        
+        .section-content [style*="color: gray"],
+        .section-content [style*="color: grey"],
+        .section-content [style*="color: #808080"],
+        .section-content [style*="color: rgb(128, 128, 128)"] {
+            color: #6b7280 !important;
+        }
+        
+        .section-content [style*="color: black"],
+        .section-content [style*="color: #000000"],
+        .section-content [style*="color: rgb(0, 0, 0)"] {
+            color: #000000 !important;
+        }
+        
+        .section-content [style*="color: white"],
+        .section-content [style*="color: #ffffff"],
+        .section-content [style*="color: rgb(255, 255, 255)"] {
+            color: #ffffff !important;
+        }
+        
+        /* دعم ألوان TipTap المحددة للعربية */
+        .section-content .text-red-500,
+        .section-content .text-red-600,
+        .section-content .text-red-700 {
+            color: #dc2626 !important;
+        }
+        
+        .section-content .text-blue-500,
+        .section-content .text-blue-600,
+        .section-content .text-blue-700 {
+            color: #3b82f6 !important;
+        }
+        
+        .section-content .text-green-500,
+        .section-content .text-green-600,
+        .section-content .text-green-700 {
+            color: #10b981 !important;
+        }
+        
+        .section-content .text-yellow-500,
+        .section-content .text-yellow-600,
+        .section-content .text-yellow-700 {
+            color: #f59e0b !important;
+        }
+        
+        .section-content .text-purple-500,
+        .section-content .text-purple-600,
+        .section-content .text-purple-700 {
+            color: #8b5cf6 !important;
+        }
+        
+        .section-content .text-orange-500,
+        .section-content .text-orange-600,
+        .section-content .text-orange-700 {
+            color: #f97316 !important;
+        }
+        
+        .section-content .text-pink-500,
+        .section-content .text-pink-600,
+        .section-content .text-pink-700 {
+            color: #ec4899 !important;
+        }
+        
+        .section-content .text-gray-500,
+        .section-content .text-gray-600,
+        .section-content .text-gray-700 {
+            color: #6b7280 !important;
+        }
+        
+        .section-content .text-black {
+            color: #000000 !important;
+        }
+        
+        .section-content .text-white {
+            color: #ffffff !important;
+        }
+        
+        /* دعم ألوان خلفية TipTap للعربية */
+        .section-content .bg-red-500,
+        .section-content .bg-red-600,
+        .section-content .bg-red-700 {
+            background-color: #dc2626 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-blue-500,
+        .section-content .bg-blue-600,
+        .section-content .bg-blue-700 {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-green-500,
+        .section-content .bg-green-600,
+        .section-content .bg-green-700 {
+            background-color: #10b981 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-yellow-500,
+        .section-content .bg-yellow-600,
+        .section-content .bg-yellow-700 {
+            background-color: #f59e0b !important;
+            color: black !important;
+        }
+        
+        .section-content .bg-purple-500,
+        .section-content .bg-purple-600,
+        .section-content .bg-purple-700 {
+            background-color: #8b5cf6 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-orange-500,
+        .section-content .bg-orange-600,
+        .section-content .bg-orange-700 {
+            background-color: #f97316 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-pink-500,
+        .section-content .bg-pink-600,
+        .section-content .bg-pink-700 {
+            background-color: #ec4899 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-gray-500,
+        .section-content .bg-gray-600,
+        .section-content .bg-gray-700 {
+            background-color: #6b7280 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-black {
+            background-color: #000000 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-white {
+            background-color: #ffffff !important;
+            color: black !important;
+        }
+        
+        /* دعم ألوان خلفية TipTap المباشرة للعربية */
+        .section-content [style*="background-color: red"],
+        .section-content [style*="background-color: #ff0000"],
+        .section-content [style*="background-color: rgb(255, 0, 0)"] {
+            background-color: #dc2626 !important;
+            color: white !important;
+        }
+        
+        .section-content [style*="background-color: blue"],
+        .section-content [style*="background-color: #0000ff"],
+        .section-content [style*="background-color: rgb(0, 0, 255)"] {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+        
+        .section-content [style*="background-color: green"],
+        .section-content [style*="background-color: #00ff00"],
+        .section-content [style*="background-color: rgb(0, 255, 0)"] {
+            background-color: #10b981 !important;
+            color: white !important;
+        }
+        
+        .section-content [style*="background-color: yellow"],
+        .section-content [style*="background-color: #ffff00"],
+        .section-content [style*="background-color: rgb(255, 255, 0)"] {
+            background-color: #f59e0b !important;
+            color: black !important;
+        }
+        
+        .section-content [style*="background-color: purple"],
+        .section-content [style*="background-color: #800080"],
+        .section-content [style*="background-color: rgb(128, 0, 128)"] {
+            background-color: #8b5cf6 !important;
+            color: white !important;
+        }
+        
+        .section-content [style*="background-color: orange"],
+        .section-content [style*="background-color: #ffa500"],
+        .section-content [style*="background-color: rgb(255, 165, 0)"] {
+            background-color: #f97316 !important;
+            color: white !important;
+        }
+        
+        .section-content [style*="background-color: pink"],
+        .section-content [style*="background-color: #ffc0cb"],
+        .section-content [style*="background-color: rgb(255, 192, 203)"] {
+            background-color: #ec4899 !important;
+            color: white !important;
+        }
+        
+        .section-content [style*="background-color: gray"],
+        .section-content [style*="background-color: grey"],
+        .section-content [style*="background-color: #808080"],
+        .section-content [style*="background-color: rgb(128, 128, 128)"] {
+            background-color: #6b7280 !important;
+            color: white !important;
+        }
+        
+        .section-content [style*="background-color: black"],
+        .section-content [style*="background-color: #000000"],
+        .section-content [style*="background-color: rgb(0, 0, 0)"] {
+            background-color: #000000 !important;
+            color: white !important;
+        }
+        
+        .section-content [style*="background-color: white"],
+        .section-content [style*="background-color: #ffffff"],
+        .section-content [style*="background-color: rgb(255, 255, 255)"] {
+            background-color: #ffffff !important;
+            color: black !important;
         }
         
         .section-content em, .section-content i {
@@ -631,6 +957,11 @@ const generateArabicHTML = (catalogue: any): string => {
             color: white !important;
             visibility: visible !important;
             opacity: 1 !important;
+            /* ضمان ظهور الإيموجي */
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", "EmojiOne Mozilla", "Twemoji Mozilla", "Segoe UI Symbol", Arial, sans-serif !important;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         
         @media print {
@@ -661,7 +992,7 @@ const generateArabicHTML = (catalogue: any): string => {
             
             body {
                 padding: 20px;
-                padding-bottom: 60px; /* مساحة للفوتر */
+                padding-bottom: 100px; /* مساحة إضافية للفوتر */
                 font-size: 12px;
             }
             
@@ -713,28 +1044,171 @@ const generateArabicHTML = (catalogue: any): string => {
             .footer-icon {
                 font-size: 14px !important;
                 margin-left: 5px !important;
+                /* ضمان ظهور الإيموجي في الطباعة */
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                /* استخدام رموز بديلة للإيموجي في الطباعة */
+                font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", "EmojiOne Mozilla", "Twemoji Mozilla", "Segoe UI Symbol", Arial, sans-serif !important;
+            }
+            
+            /* رموز بديلة للإيموجي في الطباعة */
+            .footer-icon[data-emoji="web"]::before {
+                content: "🌐";
+                display: inline-block;
+                margin-left: 5px;
+            }
+            
+            .footer-icon[data-emoji="doc"]::before {
+                content: "📄";
+                display: inline-block;
+                margin-left: 5px;
+            }
+            
+            .footer-icon[data-emoji="phone"]::before {
+                content: "📞";
+                display: inline-block;
+                margin-left: 5px;
             }
             
             .section-content {
                 font-size: 12px;
                 line-height: 1.6;
-                margin-bottom: 20px; /* مسافة إضافية قبل الفوتر */
+                margin-bottom: 25px; /* مسافة إضافية قبل الفوتر */
             }
             
             .section {
                 page-break-inside: avoid;
-                margin-bottom: 25px;
+                margin-bottom: 30px;
+            }
+            
+            /* إضافة مساحة إضافية للقسم الأخير في الطباعة */
+            .section:last-child {
+                margin-bottom: 80px;
             }
             
             /* تحسين الطباعة للنص العربي */
             * {
-                -webkit-print-color-adjust: exact;
-                color-adjust: exact;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* دعم ألوان TipTap في الطباعة للعربية */
+            .section-content [style*="color"] {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .section-content [style*="background-color"] {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* دعم ألوان TipTap المباشرة في الطباعة للعربية */
+            .section-content [style*="color: red"],
+            .section-content [style*="color: #ff0000"],
+            .section-content [style*="color: rgb(255, 0, 0)"] {
+                color: #dc2626 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .section-content [style*="color: blue"],
+            .section-content [style*="color: #0000ff"],
+            .section-content [style*="color: rgb(0, 0, 255)"] {
+                color: #3b82f6 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .section-content [style*="color: green"],
+            .section-content [style*="color: #00ff00"],
+            .section-content [style*="color: rgb(0, 255, 0)"] {
+                color: #10b981 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .section-content [style*="background-color: red"],
+            .section-content [style*="background-color: #ff0000"],
+            .section-content [style*="background-color: rgb(255, 0, 0)"] {
+                background-color: #dc2626 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .section-content [style*="background-color: blue"],
+            .section-content [style*="background-color: #0000ff"],
+            .section-content [style*="background-color: rgb(0, 0, 255)"] {
+                background-color: #3b82f6 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .section-content [style*="background-color: green"],
+            .section-content [style*="background-color: #00ff00"],
+            .section-content [style*="background-color: rgb(0, 255, 0)"] {
+                background-color: #10b981 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* دعم الإيموجي في الطباعة */
+            .section-content {
+                font-family: 'Noto Sans Arabic', 'Cairo', 'Tahoma', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif !important;
+            }
+            
+            /* ضمان ظهور الإيموجي في الطباعة */
+            .footer-icon {
+                font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", "EmojiOne Mozilla", "Twemoji Mozilla", "Segoe UI Symbol", Arial, sans-serif !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* رموز بديلة للإيموجي في الطباعة */
+            .footer-icon[data-emoji="web"]::before {
+                content: "🌐";
+                display: inline-block;
+                margin-left: 5px;
+            }
+            
+            .footer-icon[data-emoji="doc"]::before {
+                content: "📄";
+                display: inline-block;
+                margin-left: 5px;
+            }
+            
+            .footer-icon[data-emoji="phone"]::before {
+                content: "📞";
+                display: inline-block;
+                margin-left: 5px;
             }
             
             /* ضمان عدم تداخل المحتوى مع الفوتر */
             @page {
-                margin-bottom: 70px;
+                margin-bottom: 80px;
+            }
+            
+            /* إضافة مساحة إضافية للمحتوى */
+            .section:last-child {
+                margin-bottom: 80px;
+            }
+            
+            .short-desc {
+                margin-bottom: 40px;
             }
         }
         
@@ -768,6 +1242,33 @@ const generateArabicHTML = (catalogue: any): string => {
                 font-size: 13px;
             }
         }
+        
+        /* ضمان ظهور الإيموجي في جميع الحالات */
+        .footer-icon {
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", "EmojiOne Mozilla", "Twemoji Mozilla", "Segoe UI Symbol", Arial, sans-serif !important;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        
+        /* رموز بديلة للإيموجي */
+        .footer-icon[data-emoji="web"]::before {
+            content: "🌐";
+            display: inline-block;
+            margin-left: 5px;
+        }
+        
+        .footer-icon[data-emoji="doc"]::before {
+            content: "📄";
+            display: inline-block;
+            margin-left: 5px;
+        }
+        
+        .footer-icon[data-emoji="phone"]::before {
+            content: "📞";
+            display: inline-block;
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body>
@@ -786,6 +1287,9 @@ const generateArabicHTML = (catalogue: any): string => {
             <div class="section-content">${section.content}</div>
         </div>
     `).join('')}
+    
+    <!-- مساحة إضافية لتجنب تغطية الفوتر للمحتوى -->
+    <div style="height: 80px; clear: both;"></div>
     
     <div class="footer">
         <div class="footer-content">
@@ -885,18 +1389,42 @@ const generateArabicHTML = (catalogue: any): string => {
         document.addEventListener('DOMContentLoaded', function() {
             removeAds();
             ensureArabicFooter();
+            ensureEmojiDisplay();
         });
         
         // تشغيل التنظيف والفوتر كل ثانية للتأكد
         setInterval(function() {
             removeAds();
             ensureArabicFooter();
+            ensureEmojiDisplay();
         }, 1000);
         
         // تشغيل التنظيف قبل الطباعة
         window.addEventListener('beforeprint', function() {
             removeAds();
             ensureArabicFooter();
+            
+            // ضمان ظهور الإيموجي في الطباعة
+            const footerIcons = document.querySelectorAll('.footer-icon');
+            footerIcons.forEach((icon, index) => {
+                if (index === 0) {
+                    icon.setAttribute('data-emoji', 'web');
+                    icon.innerHTML = '🌐';
+                } else if (index === 1) {
+                    icon.setAttribute('data-emoji', 'doc');
+                    icon.innerHTML = '📄';
+                } else if (index === 2) {
+                    icon.setAttribute('data-emoji', 'phone');
+                    icon.innerHTML = '📞';
+                }
+                
+                // تطبيق CSS للطباعة
+                icon.style.setProperty('font-family', '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", "EmojiOne Mozilla", "Twemoji Mozilla", "Segoe UI Symbol", Arial, sans-serif', 'important');
+                icon.style.setProperty('-webkit-print-color-adjust', 'exact', 'important');
+                icon.style.setProperty('color-adjust', 'exact', 'important');
+                icon.style.setProperty('print-color-adjust', 'exact', 'important');
+            });
+            
             // إزالة أزرار الإغلاق فقط
             const closeButtons = document.querySelectorAll('button');
             closeButtons.forEach(btn => {
@@ -925,6 +1453,7 @@ const generateArabicHTML = (catalogue: any): string => {
         // تشغيل التنظيف والفوتر فوراً
         removeAds();
         ensureArabicFooter();
+        ensureEmojiDisplay();
         
         // دالة إضافية لضمان الفوتر
         function forceFooterDisplay() {
@@ -944,6 +1473,27 @@ const generateArabicHTML = (catalogue: any): string => {
                 footer.style.setProperty('height', '60px', 'important');
                 footer.style.setProperty('width', '100%', 'important');
             }
+        }
+        
+        // دالة لضمان ظهور الإيموجي
+        function ensureEmojiDisplay() {
+            const footerIcons = document.querySelectorAll('.footer-icon');
+            footerIcons.forEach((icon, index) => {
+                // تطبيق CSS للطباعة
+                icon.style.setProperty('font-family', '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", "EmojiOne Mozilla", "Twemoji Mozilla", "Segoe UI Symbol", Arial, sans-serif', 'important');
+                icon.style.setProperty('-webkit-print-color-adjust', 'exact', 'important');
+                icon.style.setProperty('color-adjust', 'exact', 'important');
+                icon.style.setProperty('print-color-adjust', 'exact', 'important');
+                
+                // التأكد من وجود الإيموجي
+                if (index === 0 && !icon.innerHTML.includes('🌐')) {
+                    icon.innerHTML = '🌐';
+                } else if (index === 1 && !icon.innerHTML.includes('📄')) {
+                    icon.innerHTML = '📄';
+                } else if (index === 2 && !icon.innerHTML.includes('📞')) {
+                    icon.innerHTML = '📞';
+                }
+            });
         }
         
         // حماية الفوتر العربي من الإزالة
@@ -984,6 +1534,7 @@ const generateArabicHTML = (catalogue: any): string => {
             protectArabicFooter();
             ensureArabicFooter();
             forceFooterDisplay();
+            ensureEmojiDisplay();
             
             // إزالة أي عناصر جديدة قد تظهر
             const allElements = document.querySelectorAll('*');

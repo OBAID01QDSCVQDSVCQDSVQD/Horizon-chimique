@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { FiPlus, FiEye, FiEdit2, FiTrash2, FiDownload } from "react-icons/fi";
+import { FiPlus, FiEye, FiEdit2, FiTrash2, FiDownload, FiX } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, Pencil, Trash2, FileText, Smile } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FileText, Smile, X } from 'lucide-react';
 import TiptapEditor from '@/components/TiptapEditor';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
@@ -84,6 +84,39 @@ interface Catalogue {
 }
 
 export default function AdminCataloguesPage() {
+  // CSS مخصص لتحسين التمرير
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+      
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #c1c1c1 #f1f1f1;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   const { data: session } = useSession();
   const router = useRouter();
   const [catalogues, setCatalogues] = useState<Catalogue[]>([]);
@@ -142,6 +175,8 @@ export default function AdminCataloguesPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [currentEmojiField, setCurrentEmojiField] = useState<string | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchCatalogues();
@@ -204,6 +239,7 @@ export default function AdminCataloguesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const url = editingCatalogue
         ? `/api/catalogues/${editingCatalogue._id}`
@@ -229,6 +265,8 @@ export default function AdminCataloguesPage() {
     } catch (error) {
       console.error('Erreur:', error);
       toast.error('Erreur lors de la sauvegarde de la fiche technique');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -316,7 +354,7 @@ export default function AdminCataloguesPage() {
     
     const sourceText = (formData as any)[sourceField];
     if (!sourceText || !sourceText.trim()) {
-      toast.error('النص المصدر فارغ');
+      toast.error('Le texte source est vide');
       return;
     }
     
@@ -341,13 +379,49 @@ export default function AdminCataloguesPage() {
         [targetField]: data.translatedText
       }));
       
-      toast.success(`تم ترجمة ${fieldName} بنجاح`);
+              toast.success(`${fieldName} traduit avec succès`);
     } catch (error) {
       console.error('خطأ في الترجمة:', error);
-      toast.error('فشل في الترجمة');
+              toast.error('Échec de la traduction');
     } finally {
       setIsTranslating(false);
     }
+  };
+
+  // دالة لتنظيف HTML tags من النص
+  const stripHtml = (html: string): string => {
+    if (!html) return '';
+    return html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
+      .replace(/<p[^>]*>/gi, '')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<div[^>]*>/gi, '')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<h[1-6][^>]*>/gi, '')
+      .replace(/<\/h[1-6]>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<ul[^>]*>|<\/ul>/gi, '')
+      .replace(/<ol[^>]*>|<\/ol>/gi, '')
+      .replace(/<strong[^>]*>|<\/strong>/gi, '')
+      .replace(/<b[^>]*>|<\/b>/gi, '')
+      .replace(/<em[^>]*>|<\/em>/gi, '')
+      .replace(/<i[^>]*>|<\/i>/gi, '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
+      .replace(/&laquo;/g, '«')
+      .replace(/&raquo;/g, '»')
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .replace(/^\s+|\s+$/g, '')
+      .trim();
   };
 
   const resetForm = () => {
@@ -728,13 +802,13 @@ export default function AdminCataloguesPage() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('en')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors text-base ${
                       activeTab === 'en'
                         ? 'bg-white text-blue-600 shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    🇬🇧 English
+                    English en
                   </button>
                   <button
                     type="button"
@@ -745,7 +819,7 @@ export default function AdminCataloguesPage() {
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    🇸🇦 العربية
+                    TN العربية
                   </button>
                 </div>
 
@@ -1472,8 +1546,12 @@ export default function AdminCataloguesPage() {
                   >
                     Annuler
                   </Button>
-                  <Button type="submit">
-                    {editingCatalogue ? 'Mettre à jour' : 'Créer'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> En cours...</span>
+                    ) : (
+                      editingCatalogue ? 'Mettre à jour' : 'Créer'
+                    )}
                   </Button>
                 </DialogFooter>
               </form>
@@ -1503,7 +1581,7 @@ export default function AdminCataloguesPage() {
                   return (
                     <TableRow key={catalogueId as string}>
                       <TableCell>{catalogue.title}</TableCell>
-                      <TableCell>{catalogue.shortdesc}</TableCell>
+                      <TableCell>{stripHtml(catalogue.shortdesc)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
@@ -1562,61 +1640,62 @@ export default function AdminCataloguesPage() {
       </Card>
 
       <Dialog open={!!viewingCatalogue} onOpenChange={() => setViewingCatalogue(null)}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                            <DialogTitle>Détails de la Fiche Technique</DialogTitle>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader className="flex-shrink-0">
+                            <DialogTitle className="text-xl font-bold text-gray-800">Détails de la Fiche Technique</DialogTitle>
               </DialogHeader>
               {viewingCatalogue && (
-            <div className="grid gap-4">
-              <div>
-                <h3 className="font-semibold">Titre</h3>
-                <p>{viewingCatalogue.title}</p>
+            <div className="grid gap-4 overflow-y-auto flex-1 pr-2 custom-scrollbar" style={{ maxHeight: 'calc(90vh - 120px)' }}>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Titre</h3>
+                <p className="text-gray-800">{viewingCatalogue.title}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Courte Description</h3>
-                <p>{viewingCatalogue.shortdesc}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Courte Description</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.shortdesc)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Description</h3>
-                <p>{viewingCatalogue.description}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Description</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.description)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Domaine</h3>
-                <p>{viewingCatalogue.domaine}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Domaine</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.domaine)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Caractéristiques et Avantages</h3>
-                <p>{viewingCatalogue.proprietes}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Caractéristiques et Avantages</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.proprietes)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Préparation</h3>
-                <p>{viewingCatalogue.preparation}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Préparation</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.preparation)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Conditions</h3>
-                <p>{viewingCatalogue.conditions}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Conditions</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.conditions)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Application</h3>
-                <p>{viewingCatalogue.application}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Application</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.application)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Consommation</h3>
-                <p>{viewingCatalogue.consommation}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Consommation</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.consommation)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Nettoyage</h3>
-                <p>{viewingCatalogue.nettoyage}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Nettoyage</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.nettoyage)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Stockage</h3>
-                <p>{viewingCatalogue.stockage}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Stockage</h3>
+                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.stockage)}</p>
                   </div>
-              <div>
-                <h3 className="font-semibold">Consignes</h3>
-                <p>{viewingCatalogue.consignes}</p>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="font-semibold text-lg text-blue-600 mb-2">Consignes</h3>
+                                <p className="text-gray-800 whitespace-pre-line">{stripHtml(viewingCatalogue.consignes)}</p>
                   </div>
-                </div>
+                  <div className="h-4"></div> {/* مساحة إضافية في النهاية */}
+                  </div>
               )}
             </DialogContent>
           </Dialog>

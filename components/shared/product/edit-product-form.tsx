@@ -768,7 +768,7 @@ export default function EditProductForm({
                   onClick={() => {
                     if (description) {
                       navigator.clipboard.writeText(description)
-                      toast.success('تم نسخ النص!')
+                      toast.success('Texte copié !')
                     }
                   }}
                   className="absolute top-2 right-2 px-2 py-1 text-xs bg-white border border-gray-300 rounded shadow hover:bg-gray-100 flex items-center gap-1 text-gray-700 transition"
@@ -808,7 +808,7 @@ export default function EditProductForm({
                     urls.push(url)
                   } catch (uploadError) {
                     console.error('Error uploading base image:', uploadError);
-                    toast.error('فشل في رفع الصورة الرئيسية. يرجى المحاولة مرة أخرى.');
+                    toast.error('Échec du téléchargement de l\'image principale. Veuillez réessayer.');
                     // Optionally break or continue based on desired behavior for multiple uploads
                   }
                 }

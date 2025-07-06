@@ -49,14 +49,14 @@ export default function AddToCart({
         try {
           const itemWithId = { ...item, clientId: generateCartItemId(item) };
           addItem(itemWithId, 1)
-          toast('Added to Cart', {
+          toast('Ajouté au panier', {
             action: {
-              label: 'Go to Cart',
+              label: 'Aller au panier',
               onClick: () => router.push('/cart'),
             },
           })
         } catch (error: any) {
-          toast.error('Error', {
+          toast.error('Erreur', {
             description: error.message,
           })
         }
@@ -92,7 +92,7 @@ export default function AddToCart({
             const itemId = await addItem(itemWithId, quantity)
             router.push(`/cart`)
           } catch (error: any) {
-            toast.error('Error', {
+            toast.error('Erreur', {
               description: error.message,
             })
           }
@@ -108,7 +108,7 @@ export default function AddToCart({
             addItem(itemWithId, quantity)
             router.push(`/checkout`)
           } catch (error: any) {
-            toast.error('Error', {
+            toast.error('Erreur', {
               description: error.message,
             })
           }

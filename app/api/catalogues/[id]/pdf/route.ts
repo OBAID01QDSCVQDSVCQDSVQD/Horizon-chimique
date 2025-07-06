@@ -145,9 +145,10 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
         })();
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap');
         
         * {
             margin: 0;
@@ -156,14 +157,17 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
         }
         
         body {
-            font-family: ${fontFamily};
+            font-family: ${isRTL 
+              ? "'Noto Sans Arabic', 'Cairo', 'Tahoma', Arial, sans-serif"
+              : "'Inter', 'Open Sans', 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            };
             direction: ${direction};
             text-align: ${isRTL ? 'right' : 'left'};
             background: white;
             color: #333;
             line-height: 1.8;
             padding: 40px;
-            padding-bottom: 80px;
+            padding-bottom: 100px; /* مساحة إضافية للفوتر */
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
@@ -171,6 +175,7 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            font-feature-settings: "liga" 1, "kern" 1;
         }
         
         .header {
@@ -280,11 +285,15 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
         .title {
             font-size: ${isRTL ? '20px' : '22px'} !important;
             font-weight: 800 !important;
+            font-family: ${isRTL 
+              ? "'Noto Sans Arabic', 'Cairo', Arial, sans-serif" 
+              : "'Inter', 'Open Sans', 'Roboto', sans-serif"
+            } !important;
             color: white !important;
             margin: 0 !important;
             margin-bottom: 5px !important;
-            word-wrap: break-word !important;
-            overflow-wrap: break-word !important;
+            word-wrap: normal !important;
+            overflow-wrap: normal !important;
             hyphens: auto !important;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
             z-index: 2 !important;
@@ -293,10 +302,15 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             line-height: 1.1 !important;
             width: 100% !important;
             display: block !important;
+            word-break: normal !important;
         }
         
         .subtitle {
             font-size: ${isRTL ? '13px' : '14px'} !important;
+            font-family: ${isRTL 
+              ? "'Noto Sans Arabic', 'Cairo', Arial, sans-serif" 
+              : "'Inter', 'Open Sans', 'Roboto', sans-serif"
+            } !important;
             color: rgba(255,255,255,0.9) !important;
             font-weight: 500 !important;
             z-index: 2 !important;
@@ -313,19 +327,20 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
             padding: 25px 30px;
             border-radius: 12px;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             font-size: 15px;
             color: #2c3e50;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: pre-wrap;
-            hyphens: auto;
+            word-wrap: normal;
+            overflow-wrap: normal;
+            white-space: normal;
+            hyphens: none;
             text-align: ${isRTL ? 'right' : 'justify'};
             position: relative;
             border: 1px solid #e9ecef;
             box-shadow: 0 4px 16px rgba(0,0,0,0.1);
             line-height: 1.7;
             direction: ${direction};
+            word-break: normal;
         }
         
         .short-desc::before {
@@ -359,6 +374,11 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             position: relative;
         }
         
+        /* إضافة مساحة إضافية للقسم الأخير */
+        .section:last-child {
+            margin-bottom: 80px;
+        }
+        
         .section-title {
             background: linear-gradient(135deg, #003366 0%, #0066cc 50%, #4da6ff 100%);
             color: white;
@@ -367,12 +387,13 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             font-weight: 700;
             margin-bottom: 0;
             border-radius: 10px 10px 0 0;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
+            word-wrap: normal;
+            overflow-wrap: normal;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
             letter-spacing: 0.3px;
             position: relative;
             overflow: hidden;
+            word-break: normal;
         }
         
         .section-title::before {
@@ -400,17 +421,20 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             color: #2c3e50;
             border: 1px solid #e9ecef;
             border-top: none;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: pre-wrap;
-            hyphens: auto;
+            word-wrap: normal;
+            overflow-wrap: normal;
+            white-space: normal;
+            hyphens: none;
             text-align: ${isRTL ? 'right' : 'justify'};
-            word-break: break-word;
+            word-break: normal;
             max-width: 100%;
-            overflow-wrap: anywhere;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             position: relative;
             direction: ${direction};
+            font-family: ${isRTL 
+              ? "'Noto Sans Arabic', 'Cairo', 'Tahoma', Arial, sans-serif"
+              : "'Inter', 'Open Sans', 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            };
         }
         
         .section-content::before {
@@ -425,110 +449,306 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
         }
         
         .section-content p {
-            margin: 0;
-            padding: 0;
+            margin-bottom: 10px;
             word-spacing: normal;
             letter-spacing: normal;
+            font-family: inherit;
+            word-break: normal;
+            overflow-wrap: normal;
         }
         
-        /* إزالة تنسيق العناوين - تظهر كما هي */
+        /* تنسيق العناوين مع الخطوط العريضة */
         .section-content h1, .section-content h2, .section-content h3, 
         .section-content h4, .section-content h5, .section-content h6 {
-            font-weight: inherit;
-            margin: 0;
-            padding: 0;
-            color: inherit;
-            line-height: inherit;
-            font-size: inherit;
+            font-weight: bold !important;
+            font-family: ${isRTL 
+              ? "'Noto Sans Arabic', 'Cairo', Arial, sans-serif" 
+              : "'Inter', 'Open Sans', 'Roboto', sans-serif"
+            } !important;
+            margin: 10px 0 5px 0 !important;
+            padding: 0 !important;
+            color: #003366 !important;
+            line-height: 1.4 !important;
+            text-align: ${isRTL ? 'right' : 'left'} !important;
         }
         
+        .section-content h1 { font-size: 18px !important; }
+        .section-content h2 { font-size: 16px !important; }
+        .section-content h3 { font-size: 15px !important; }
+        .section-content h4 { font-size: 14px !important; }
+        .section-content h5 { font-size: 13px !important; }
+        .section-content h6 { font-size: 12px !important; }
+        
         .section-content ul, .section-content ol {
-            margin: 0;
-            padding: 0;
-            list-style: none;
+            margin: 10px 0;
+            padding-${isRTL ? 'right' : 'left'}: 25px;
+            text-align: ${isRTL ? 'right' : 'left'};
         }
         
         .section-content ul li, .section-content ol li {
-            list-style: none;
             list-style-type: none;
-            margin: 0;
-            padding: 0;
-            line-height: inherit;
-        }
-        
-        .section-content ul li::before, .section-content ol li::before {
-            display: none !important;
-            content: none !important;
+            margin-bottom: 5px;
+            line-height: 1.6;
+            text-align: ${isRTL ? 'right' : 'left'};
         }
         
         .section-content strong, .section-content b {
-            font-weight: inherit;
-            color: inherit;
+            font-weight: bold !important;
+            font-family: ${isRTL 
+              ? "'Noto Sans Arabic', 'Cairo', Arial, sans-serif" 
+              : "'Inter', 'Open Sans', 'Roboto', sans-serif"
+            } !important;
+        }
+        
+        /* دعم ألوان TipTap - الحفاظ على الألوان الأصلية */
+        .section-content [style*="color"] {
+            /* الحفاظ على اللون الأصلي من TipTap */
+        }
+        
+        .section-content span[style*="color"] {
+            /* الحفاظ على اللون الأصلي من TipTap */
+        }
+        
+        .section-content p[style*="color"] {
+            /* الحفاظ على اللون الأصلي من TipTap */
+        }
+        
+        .section-content div[style*="color"] {
+            /* الحفاظ على اللون الأصلي من TipTap */
+        }
+        
+        /* دعم ألوان الخلفية من TipTap */
+        .section-content [style*="background-color"] {
+            /* الحفاظ على لون الخلفية الأصلي من TipTap */
+        }
+        
+        .section-content span[style*="background-color"] {
+            /* الحفاظ على لون الخلفية الأصلي من TipTap */
+        }
+        
+        .section-content p[style*="background-color"] {
+            /* الحفاظ على لون الخلفية الأصلي من TipTap */
+        }
+        
+        .section-content div[style*="background-color"] {
+            /* الحفاظ على لون الخلفية الأصلي من TipTap */
+        }
+        
+        /* دعم الألوان المباشرة من style attributes */
+        .section-content [style*="color: rgb"] {
+            /* الحفاظ على الألوان RGB من TipTap */
+        }
+        
+        .section-content [style*="color: #"] {
+            /* الحفاظ على الألوان HEX من TipTap */
+        }
+        
+        .section-content [style*="background-color: rgb"] {
+            /* الحفاظ على ألوان خلفية RGB من TipTap */
+        }
+        
+        .section-content [style*="background-color: #"] {
+            /* الحفاظ على ألوان خلفية HEX من TipTap */
+        }
+        
+        /* دعم ألوان TipTap المحددة */
+        .section-content .text-red-500,
+        .section-content .text-red-600,
+        .section-content .text-red-700 {
+            color: #dc2626 !important;
+        }
+        
+        .section-content .text-blue-500,
+        .section-content .text-blue-600,
+        .section-content .text-blue-700 {
+            color: #3b82f6 !important;
+        }
+        
+        .section-content .text-green-500,
+        .section-content .text-green-600,
+        .section-content .text-green-700 {
+            color: #10b981 !important;
+        }
+        
+        .section-content .text-yellow-500,
+        .section-content .text-yellow-600,
+        .section-content .text-yellow-700 {
+            color: #f59e0b !important;
+        }
+        
+        .section-content .text-purple-500,
+        .section-content .text-purple-600,
+        .section-content .text-purple-700 {
+            color: #8b5cf6 !important;
+        }
+        
+        .section-content .text-orange-500,
+        .section-content .text-orange-600,
+        .section-content .text-orange-700 {
+            color: #f97316 !important;
+        }
+        
+        .section-content .text-pink-500,
+        .section-content .text-pink-600,
+        .section-content .text-pink-700 {
+            color: #ec4899 !important;
+        }
+        
+        .section-content .text-gray-500,
+        .section-content .text-gray-600,
+        .section-content .text-gray-700 {
+            color: #6b7280 !important;
+        }
+        
+        .section-content .text-black {
+            color: #000000 !important;
+        }
+        
+        .section-content .text-white {
+            color: #ffffff !important;
+        }
+        
+        /* دعم ألوان خلفية TipTap */
+        .section-content .bg-red-500,
+        .section-content .bg-red-600,
+        .section-content .bg-red-700 {
+            background-color: #dc2626 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-blue-500,
+        .section-content .bg-blue-600,
+        .section-content .bg-blue-700 {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-green-500,
+        .section-content .bg-green-600,
+        .section-content .bg-green-700 {
+            background-color: #10b981 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-yellow-500,
+        .section-content .bg-yellow-600,
+        .section-content .bg-yellow-700 {
+            background-color: #f59e0b !important;
+            color: black !important;
+        }
+        
+        .section-content .bg-purple-500,
+        .section-content .bg-purple-600,
+        .section-content .bg-purple-700 {
+            background-color: #8b5cf6 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-orange-500,
+        .section-content .bg-orange-600,
+        .section-content .bg-orange-700 {
+            background-color: #f97316 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-pink-500,
+        .section-content .bg-pink-600,
+        .section-content .bg-pink-700 {
+            background-color: #ec4899 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-gray-500,
+        .section-content .bg-gray-600,
+        .section-content .bg-gray-700 {
+            background-color: #6b7280 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-black {
+            background-color: #000000 !important;
+            color: white !important;
+        }
+        
+        .section-content .bg-white {
+            background-color: #ffffff !important;
+            color: black !important;
         }
         
         .section-content em, .section-content i {
-            font-style: inherit;
+            font-style: italic !important;
+            font-family: ${isRTL 
+              ? "'Noto Sans Arabic', 'Cairo', Arial, sans-serif" 
+              : "'Inter', 'Open Sans', 'Roboto', sans-serif"
+            } !important;
         }
         
         .section-content u {
-            text-decoration: inherit;
+            text-decoration: underline;
         }
         
         .section-content blockquote {
-            border: none;
-            padding: 0;
-            margin: 0;
-            font-style: inherit;
-            color: inherit;
+            border-${isRTL ? 'right' : 'left'}: 4px solid #0066cc;
+            padding-${isRTL ? 'right' : 'left'}: 15px;
+            margin: 15px 0;
+            font-style: italic;
+            color: #555;
+            text-align: ${isRTL ? 'right' : 'left'};
         }
         
         .section-content code {
-            background: inherit;
-            padding: 0;
-            border: none;
-            font-family: inherit;
-            font-size: inherit;
+            background-color: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            direction: ltr;
+            display: inline-block;
         }
         
         .section-content pre {
-            background: inherit;
-            border: none;
-            padding: 0;
-            margin: 0;
-            overflow: visible;
-            font-family: inherit;
-            font-size: inherit;
-            line-height: inherit;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            direction: ltr;
+            text-align: left;
         }
         
         .section-content table {
-            width: auto;
-            border-collapse: separate;
-            margin: 0;
-            border: none;
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            direction: ${direction};
         }
         
         .section-content table th,
         .section-content table td {
-            border: none;
-            padding: 0;
-            text-align: inherit;
+            border: 1px solid #dee2e6;
+            padding: 8px 12px;
+            text-align: ${isRTL ? 'right' : 'left'};
         }
         
         .section-content table th {
-            background: inherit;
-            font-weight: inherit;
-            color: inherit;
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #003366;
         }
         
         .section-content a {
-            color: inherit;
-            text-decoration: inherit;
+            color: #0066cc;
+            text-decoration: underline;
         }
         
         .section-content hr {
             border: none;
-            margin: 0;
+            border-top: 2px solid #dee2e6;
+            margin: 20px 0;
         }
         
         .footer {
@@ -629,7 +849,7 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             
             body {
                 padding: 20px;
-                padding-bottom: 60px;
+                padding-bottom: 100px; /* مساحة إضافية للفوتر */
                 font-size: 12px;
             }
             
@@ -682,12 +902,42 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             .section-content {
                 font-size: 12px;
                 line-height: 1.6;
-                margin-bottom: 20px;
+                margin-bottom: 25px; /* مسافة إضافية قبل الفوتر */
+                word-break: normal;
+                overflow-wrap: normal;
+                word-wrap: normal;
+                white-space: normal;
+                hyphens: none;
+            }
+            
+            /* دعم الألوان في الطباعة */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* دعم ألوان TipTap في الطباعة */
+            .section-content [style*="color"] {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .section-content [style*="background-color"] {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             
             .section {
                 page-break-inside: avoid;
-                margin-bottom: 25px;
+                margin-bottom: 30px;
+            }
+            
+            /* إضافة مساحة إضافية للقسم الأخير في الطباعة */
+            .section:last-child {
+                margin-bottom: 80px;
             }
             
             * {
@@ -698,6 +948,15 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             @page {
                 margin: 20mm 20mm 80px 20mm;
                 size: A4;
+            }
+            
+            /* ضمان عدم تداخل المحتوى مع الفوتر */
+            .section:last-child {
+                margin-bottom: 80px;
+            }
+            
+            .short-desc {
+                margin-bottom: 40px;
             }
         }
         
@@ -760,6 +1019,9 @@ const generateHTML = (catalogue: any, lang: string = 'fr', userLogo?: string): s
             <div class="section-content">${section.content}</div>
         </div>
     `).join('')}
+    
+    <!-- مساحة إضافية لتجنب تغطية الفوتر للمحتوى -->
+    <div style="height: 80px; clear: both;"></div>
     
     <div class="footer">
         <div class="footer-content">
