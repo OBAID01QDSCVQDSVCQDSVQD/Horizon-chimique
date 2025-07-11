@@ -30,25 +30,52 @@ export default function GarantieIndex() {
   const [loading, setLoading] = useState(true)
   const [searchPhone, setSearchPhone] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [downloadingPDFs, setDownloadingPDFs] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (!session?.user?.id) {
-      setLoading(false);
-      return;
-    }
+    // إزالة شرط تسجيل الدخول للسماح بالبحث بدون تسجيل دخول
+    // if (!session?.user?.id) {
+    //   console.log('=== SESSION DEBUG ===');
+    //   console.log('Session status:', status);
+    //   console.log('Session data:', session);
+    //   console.log('User ID:', session?.user?.id);
+    //   setLoading(false);
+    //   return;
+    // }
+    console.log('=== SESSION DEBUG ===');
+    console.log('User authenticated:', session?.user?.id);
+    console.log('User role:', session?.user?.role);
     fetchGaranties();
   }, [session, status])
 
   async function fetchGaranties(phone?: string) {
     setLoading(true)
     try {
-      const query = phone ? { phone } : {};
+      // فلترة حسب الحالة المعتمدة فقط
+      const query = phone ? { phone, status: 'APPROVED' } : { status: 'APPROVED' };
       const url = `/api/garanties?${new URLSearchParams(query as Record<string, string>)}`
+      console.log('=== FRONTEND DEBUG ===');
+      console.log('Fetching URL:', url);
+      console.log('Query params:', query);
+      
       const res = await fetch(url)
       const data = await res.json()
+      
+      console.log('API Response Status:', res.status);
+      console.log('API Response Data:', data);
+      
       if (res.ok && Array.isArray(data.garanties)) {
-        setGaranties(data.garanties);
+        console.log('Garanties from API:', data.garanties);
+        console.log('Garanties statuses:', data.garanties.map((g: any) => ({ id: g._id, status: g.status, company: g.company })));
+        
+        // تحقق إضافي من الضمانات المعتمدة فقط
+        const approvedOnly = data.garanties.filter((g: any) => g.status === 'APPROVED');
+        console.log('Approved only count:', approvedOnly.length);
+        console.log('Approved only:', approvedOnly.map((g: any) => ({ id: g._id, status: g.status, company: g.company })));
+        
+        // فلترة إضافية على الواجهة الأمامية للتأكد من عرض الضمانات المعتمدة فقط
+        setGaranties(approvedOnly);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des garanties:', error);
@@ -63,22 +90,49 @@ export default function GarantieIndex() {
   };
 
   const handleDownloadPDF = async (garantie: Garantie) => {
+    // إضافة الضمان إلى قائمة التحميل
+    setDownloadingPDFs(prev => new Set(prev).add(garantie._id));
+    
     try {
-      const response = await fetch(`/api/garantie/${garantie._id}/pdf`);
-      if (!response.ok) throw new Error('Failed to download PDF');
+      const response = await fetch(`/api/garantie/${garantie._id}/pdf`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erreur ${response.status}: ${errorText}`);
+      }
       
       const blob = await response.blob();
+      
+      // التحقق من أن الـ blob صالح
+      if (blob.size === 0) {
+        throw new Error('Le PDF généré est vide');
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `garantie-${garantie._id}.pdf`;
+      a.download = `garantie-${garantie.name || garantie._id}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      toast.success('PDF téléchargé avec succès!');
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      toast.error('Erreur lors du téléchargement du PDF');
+      toast.error(`Erreur lors du téléchargement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    } finally {
+      // إزالة الضمان من قائمة التحميل
+      setDownloadingPDFs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(garantie._id);
+        return newSet;
+      });
     }
   };
 
@@ -86,13 +140,16 @@ export default function GarantieIndex() {
     <div className="flex flex-col min-h-screen">
       <div className="max-w-4xl mx-auto p-4 flex-1">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-blue-700">Mes garanties</h1>
-          {['APPLICATEUR', 'ADMIN'].includes(session?.user?.role ?? '') && (
+          <div>
+            <h1 className="text-2xl font-bold text-blue-700">Rechercher des garanties</h1>
+            <p className="text-sm text-gray-600 mt-1">Recherchez les garanties approuvées par numéro de téléphone</p>
+          </div>
+          {session?.user?.id && ['APPLICATEUR', 'ADMIN'].includes(session?.user?.role ?? '') && (
             <Link
               href="/garantie/create"
               className="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded-xl text-base shadow transition"
             >
-              + Ajouter une nouvelle garantie
+              + Ajouter une garantie
             </Link>
           )}
         </div>
@@ -145,7 +202,10 @@ export default function GarantieIndex() {
         {status === 'loading' || loading ? (
           <div className="text-center text-gray-500">Chargement...</div>
         ) : garanties.length === 0 ? (
-          <div className="text-center text-gray-400">Aucune garantie trouvée.</div>
+          <div className="text-center text-gray-400">
+            <p className="text-lg mb-2">Aucune garantie trouvée</p>
+            <p className="text-sm">Essayez un autre numéro de téléphone ou vérifiez que la garantie est approuvée</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {garanties.map(g => (
@@ -163,10 +223,19 @@ export default function GarantieIndex() {
                     {g.status === 'APPROVED' && (
                       <button
                         onClick={() => handleDownloadPDF(g)}
-                        className="p-1 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-                        title="Télécharger le PDF"
+                        disabled={downloadingPDFs.has(g._id)}
+                        className={`p-1 transition-all duration-200 ${
+                          downloadingPDFs.has(g._id)
+                            ? 'text-blue-600 cursor-not-allowed'
+                            : 'text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400'
+                        }`}
+                        title={downloadingPDFs.has(g._id) ? "Téléchargement en cours..." : "Télécharger le PDF"}
                       >
-                        <FiDownload className="w-4 h-4" />
+                        {downloadingPDFs.has(g._id) ? (
+                          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <FiDownload className="w-4 h-4" />
+                        )}
                       </button>
                     )}
                   </div>
@@ -189,6 +258,32 @@ export default function GarantieIndex() {
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Date d'installation :</b> {g.installDate?.split('-').reverse().join('/')}</div>
                 <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Montant :</b> {g.montant} DT</div>
+                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Durée :</b> {g.duration} ans</div>
+                
+                {/* Section des maintenances */}
+                {g.maintenances && g.maintenances.length > 0 && (
+                  <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                    <b>Maintenances prévues :</b>
+                    <div className="mt-1 space-y-1">
+                      {g.maintenances.map((maintenance, index) => (
+                        <div key={index} className="text-xs bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                          📅 {maintenance.date?.split('-').reverse().join('/')}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Notes */}
+                {g.notes && (
+                  <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                    <b>Notes :</b>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
+                      {g.notes}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Créée le : {g.createdAt?.slice(0,10).split('-').reverse().join('/')}</div>
               </div>
             ))}
@@ -197,4 +292,22 @@ export default function GarantieIndex() {
       </div>
     </div>
   )
+}
+
+// إضافة CSS للأنيميشن
+const styles = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+`;
+
+// إضافة CSS إلى head
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = styles;
+  document.head.appendChild(styleElement);
 } 

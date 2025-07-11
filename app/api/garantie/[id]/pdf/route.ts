@@ -50,14 +50,27 @@ export async function GET(
   context: RouteContext
 ) {
   try {
+    console.log('Starting PDF generation...');
     await connectToDatabase();
     const { id } = await context.params;
+    
+    console.log('Looking for garantie with ID:', id);
 
     const garantie = await Garantie.findById(id).lean() as unknown as GarantieType;
     if (!garantie) {
+      console.log('Garantie not found');
       return new NextResponse('Garantie not found', { status: 404 });
     }
+    
+    console.log('Garantie found:', garantie.name);
     const user = await User.findById(garantie.userId).lean();
+    
+    if (!user) {
+      console.log('User not found for garantie');
+      return new NextResponse('User not found for this garantie', { status: 404 });
+    }
+    
+    console.log('User found:', user.name);
 
     // إعداد PDF
     const pdfDoc = await PDFDocument.create();
@@ -465,6 +478,10 @@ export async function GET(
     page.drawText(`Tél: ${user?.phone || ''}`, { x: 400, y: 15, size: 10, font, color: rgb(1,1,1) });
 
     const pdfBytes = await pdfDoc.save();
+    
+    if (!pdfBytes || pdfBytes.length === 0) {
+      throw new Error('Failed to generate PDF bytes');
+    }
 
     // تنظيف اسم المستفيد ليكون صالحاً كاسم ملف
     const cleanName = (garantie.name || 'sans-nom')
@@ -476,15 +493,23 @@ export async function GET(
     // إنشاء اسم الملف بدون الـ id
     const fileName = `garantie-${cleanName}.pdf`;
 
+    console.log('PDF generated successfully, size:', pdfBytes.length);
+    
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Cache-Control': 'no-cache',
       },
     });
   } catch (error) {
     console.error('Error generating PDF:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return new NextResponse(`Internal Server Error: ${error instanceof Error ? error.message : 'Unknown error'}`, { 
+      status: 500,
+      headers: {
+        'Content-Type': 'text/plain',
+      }
+    });
   }
 }
  

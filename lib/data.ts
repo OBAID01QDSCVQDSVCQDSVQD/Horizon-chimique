@@ -974,38 +974,33 @@ const data: Data = {
     products,
     users,
     headerMenus: [
-        {
-            name: 'Home',
-            href: '/#',
-          },
       {
-        name: "Today's Deal",
-        href: '/#',
+        name: 'Solutions',
+        href: '/solutions',
       },
       {
-        name: 'New Arrivals',
-        href: '/#',
+        name: 'Produits',
+        href: '/products',
       },
       {
-        name: 'Featured Products',
-        href: '/#',
-      },
-      
-      {
-        name: 'Customer Service',
-        href: '/#',
+        name: 'Découvrir',
+        href: '/discover',
       },
       {
-        name: 'Brands',
-        href: '/#',
+        name: 'Garantie',
+        href: '/garantie',
       },
       {
-        name: 'Product List',
-        href: '/#',
+        name: 'Rendez-vous',
+        href: '/rendez-vous',
       },
       {
-        name: 'User Account',
-        href: '/#',
+        name: 'Nouvelles',
+        href: '/news',
+      },
+      {
+        name: 'À propos',
+        href: '/about',
       },
     ],
     carousels: [

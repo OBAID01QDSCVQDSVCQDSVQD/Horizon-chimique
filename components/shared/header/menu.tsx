@@ -16,21 +16,21 @@ export default function Menu() {
     <>
       {/* شريط المينيو */}
       <div className="w-full bg-[#232F3E] h-10 flex items-center px-4">
-        {/* زر All للشاشات الصغيرة */}
+        {/* زر Menu للشاشات الصغيرة */}
         <button
           className="flex items-center gap-1 text-white font-bold px-2 py-1 hover:text-yellow-400 transition h-full md:hidden"
           onClick={() => setOpen(true)}
         >
           <MenuIcon className="w-5 h-5" />
-          <span>Tout</span>
+          <span>Menu</span>
         </button>
         {/* نص Hello واسم المستخدم للجوال */}
         <HelloUser />
         {/* القائمة الأفقية للشاشات المتوسطة وما فوق */}
         <nav className="gap-2 items-center h-full hidden md:flex">
-          <Link href="#" className="flex items-center gap-1 text-white font-bold px-2 py-1 hover:text-yellow-400 transition h-full">
+          <Link href="/" className="flex items-center gap-1 text-white font-bold px-2 py-1 hover:text-yellow-400 transition h-full">
             <MenuIcon className="w-5 h-5" />
-            <span>Tout</span>
+            <span>Accueil</span>
           </Link>
           {data.headerMenus.map((item) => (
             <Link
@@ -41,12 +41,6 @@ export default function Menu() {
               {item.name}
             </Link>
           ))}
-          <Link
-            href="/orders"
-            className="text-white hover:text-yellow-400 font-medium px-2 py-1 transition h-full"
-          >
-            Retours & Commandes
-          </Link>
         </nav>
       </div>
       {/* النافذة الجانبية (Drawer) */}
@@ -74,13 +68,6 @@ export default function Menu() {
                   {item.name}
                 </Link>
               ))}
-              <Link
-                href="/orders"
-                className="text-white hover:text-yellow-400 font-medium px-2 py-2 rounded transition"
-                onClick={() => setOpen(false)}
-              >
-                Retours & Commandes
-              </Link>
             </nav>
           </div>
         </div>

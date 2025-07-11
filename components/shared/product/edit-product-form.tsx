@@ -662,9 +662,9 @@ export default function EditProductForm({
                       <tr className="bg-gray-100 dark:bg-gray-800">
                         <th className="border px-2 py-1">#</th>
                         <th className="border px-2 py-1">Attributs</th>
-                        <th className="border px-2 py-1">السعر</th>
-                        <th className="border px-2 py-1">المخزون</th>
-                        <th className="border px-2 py-1">صورة المتغير</th>
+                        <th className="border px-2 py-1">Prix</th>
+                        <th className="border px-2 py-1">Stock</th>
+                        <th className="border px-2 py-1">Image de la variante</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -700,7 +700,7 @@ export default function EditProductForm({
                               {variant.image ? (
                                 <img src={variant.image} alt="Variant" className="w-16 h-16 object-contain rounded border" />
                               ) : (
-                                <span className="text-sm text-gray-500 dark:text-gray-400">لا توجد صورة</span>
+                                <span className="text-sm text-gray-500 dark:text-gray-400">Aucune image</span>
                               )}
                               <input
                                 type="file"
@@ -714,10 +714,10 @@ export default function EditProductForm({
                                 className="px-3 py-1 text-sm bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600 transition"
                                 style={{ display: uploadingVariantImage === i ? 'none' : 'block' }}
                               >
-                                {uploadingVariantImage === i ? 'تحميل...' : 'تعديل الصورة'}
+                                {uploadingVariantImage === i ? 'Téléchargement...' : 'Modifier l\'image'}
                               </label>
                               {uploadingVariantImage === i && (
-                                <span className="text-sm text-blue-600">جاري التحميل...</span>
+                                <span className="text-sm text-blue-600">Chargement...</span>
                               )}
                             </div>
                           </td>
@@ -760,7 +760,7 @@ export default function EditProductForm({
                   readOnly
                   rows={5}
                   className="w-full border border-gray-300 rounded p-2 text-gray-800 pr-16 bg-gray-50"
-                  placeholder="Description générée apparaîtra هنا..."
+                  placeholder="La description générée apparaîtra ici..."
                   style={{ resize: 'vertical', minHeight: 80 }}
                 />
                 <button
@@ -772,7 +772,7 @@ export default function EditProductForm({
                     }
                   }}
                   className="absolute top-2 right-2 px-2 py-1 text-xs bg-white border border-gray-300 rounded shadow hover:bg-gray-100 flex items-center gap-1 text-gray-700 transition"
-                  title="نسخ النص"
+                  title="Copier le texte"
                   disabled={!description}
                   style={{ zIndex: 10 }}
                 >
@@ -797,7 +797,7 @@ export default function EditProductForm({
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <label className="w-full md:w-1/2 flex flex-col items-center px-4 py-6 bg-gray-50 dark:bg-gray-800 text-blue-600 rounded-lg shadow-md tracking-wide uppercase border border-blue-200 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-700 transition">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>
-              <span className="mt-2 text-base leading-normal">Glisser-déposer أو انقر للتحميل</span>
+              <span className="mt-2 text-base leading-normal">Glisser-déposer ou cliquer pour télécharger</span>
               <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
                 if (!e.target.files) return
                 const files = Array.from(e.target.files)
@@ -853,7 +853,7 @@ export default function EditProductForm({
                         </option>
                       ))
                     ) : (
-                      <option value="" disabled>لا توجد فئات متاحة</option>
+                      <option value="" disabled>Aucune catégorie disponible</option>
                     )}
                   </select>
                 </div>
@@ -870,11 +870,11 @@ export default function EditProductForm({
                     className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                     disabled={loadingCatalogues}
                   >
-                    <option value="">Sélectionner une fiche تقنية</option>
+                    <option value="">Sélectionner une fiche technique</option>
                     {loadingCatalogues ? (
-                      <option value="" disabled>جاري التحميل...</option>
+                      <option value="" disabled>Chargement...</option>
                     ) : cataloguesError ? (
-                      <option value="" disabled>خطأ في التحميل</option>
+                      <option value="" disabled>Erreur de chargement</option>
                     ) : catalogues && catalogues.length > 0 ? (
                       catalogues.map(cat => (
                         <option key={typeof cat._id === 'object' && '$oid' in cat._id ? cat._id.$oid : cat._id} value={typeof cat._id === 'object' && '$oid' in cat._id ? cat._id.$oid : cat._id}>
@@ -882,7 +882,7 @@ export default function EditProductForm({
                         </option>
                       ))
                     ) : (
-                      <option value="" disabled>لا توجد أوراق بيانات متاحة</option>
+                      <option value="" disabled>Aucune fiche technique disponible</option>
                     )}
                   </select>
                   {cataloguesError && (
@@ -902,7 +902,7 @@ export default function EditProductForm({
           </div>
           {/* Attribute Selection and Management */}
           <div className="space-y-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">إضافة سمة جديدة</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Ajouter un nouvel attribut</label>
             <div className="flex gap-2">
               <select
                 className="flex-grow border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
@@ -937,7 +937,9 @@ export default function EditProductForm({
                       variant="destructive"
                       size="sm"
                       onClick={() => {
-                        setSelectedAttributes(prev => prev.filter(sa => sa.attributeId !== selectedAttr.attributeId));
+                        if (window.confirm("Êtes-vous sûr de vouloir supprimer cet attribut ?")) {
+                          setSelectedAttributes(prev => prev.filter(sa => sa.attributeId !== selectedAttr.attributeId));
+                        }
                       }}
                     >
                       <FiX className="w-4 h-4" /> Supprimer l'attribut
@@ -1004,7 +1006,7 @@ export default function EditProductForm({
                     {/* Add New Attribute Value */}
                     <div className="flex gap-2 items-center">
                       <Input
-                        placeholder="إضافة قيمة جديدة (مثال: 10 kg)"
+                        placeholder="Ajouter une nouvelle valeur (ex: 10 kg)"
                         id={`new-value-input-${selectedAttr.attributeId}`}
                       />
                       <Button
@@ -1041,9 +1043,9 @@ export default function EditProductForm({
                     <tr className="bg-gray-100 dark:bg-gray-800">
                       <th className="border px-2 py-1">#</th>
                       <th className="border px-2 py-1">Attributs</th>
-                      <th className="border px-2 py-1">السعر</th>
-                      <th className="border px-2 py-1">المخزون</th>
-                      <th className="border px-2 py-1">صورة المتغير</th>
+                      <th className="border px-2 py-1">Prix</th>
+                      <th className="border px-2 py-1">Stock</th>
+                      <th className="border px-2 py-1">Image de la variante</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1079,7 +1081,7 @@ export default function EditProductForm({
                             {variant.image ? (
                               <img src={variant.image} alt="Variant" className="w-16 h-16 object-contain rounded border" />
                             ) : (
-                              <span className="text-sm text-gray-500 dark:text-gray-400">لا توجد صورة</span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400">Aucune image</span>
                             )}
                             <input
                               type="file"
@@ -1093,10 +1095,10 @@ export default function EditProductForm({
                               className="px-3 py-1 text-sm bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600 transition"
                               style={{ display: uploadingVariantImage === i ? 'none' : 'block' }}
                             >
-                              {uploadingVariantImage === i ? 'تحميل...' : 'تعديل الصورة'}
+                              {uploadingVariantImage === i ? 'Téléchargement...' : 'Modifier l\'image'}
                             </label>
                             {uploadingVariantImage === i && (
-                              <span className="text-sm text-blue-600">جاري التحميل...</span>
+                              <span className="text-sm text-blue-600">Chargement...</span>
                             )}
                           </div>
                         </td>
@@ -1112,7 +1114,7 @@ export default function EditProductForm({
         {/* Submit Button */}
         <div className="flex justify-end">
           <Button type="submit" className="mt-4 flex items-center gap-2 px-6 py-2 text-lg" onClick={handleSubmit} disabled={loading}>
-            <FiSave /> {loading ? 'جاري الحفظ...' : 'حفظ المنتج'}
+            <FiSave /> {loading ? 'Enregistrement...' : 'Enregistrer le produit'}
           </Button>
         </div>
 
