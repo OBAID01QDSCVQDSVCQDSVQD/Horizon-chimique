@@ -20,8 +20,19 @@ const GarantieSchema = new Schema({
   installDate: { type: String }, // yyyy-mm-dd
   duration: { type: Number },
   notes: { type: String },
-  maintenances: [MaintenancePeriodSchema],
+  maintenances: [MaintenancePeriodSchema], // سيتم الاحتفاظ به للتوافق مع البيانات القديمة
   status: { type: String, enum: ['APPROVED', 'PENDING', 'REJECTED'], default: 'PENDING', required: true },
+  
+  // الحقول الجديدة لإدارة الصيانة
+  garantieStatus: { 
+    type: String, 
+    enum: ['ACTIVE', 'EXPIRED', 'CANCELLED'], 
+    default: 'ACTIVE' 
+  },
+  lastMaintenanceDate: { type: String }, // آخر صيانة تمت
+  nextMaintenanceDate: { type: String }, // موعد الصيانة القادمة
+  maintenanceCount: { type: Number, default: 0 }, // عدد الصيانات المنجزة
+  totalMaintenanceCost: { type: Number, default: 0 }, // إجمالي تكلفة الصيانة
 }, { timestamps: true })
 
 const Garantie = models.Garantie || model('Garantie', GarantieSchema)

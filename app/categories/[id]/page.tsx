@@ -100,7 +100,7 @@ export default function CategoryProductsPage({ params }: { params: Promise<{ id:
 
       {products.length === 0 ? (
         <div className="text-center py-12">
-          <h2 className="text-xl text-gray-600">لا توجد منتجات في هذه الفئة</h2>
+          <h2 className="text-xl text-gray-600">Aucun produit dans cette catégorie</h2>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

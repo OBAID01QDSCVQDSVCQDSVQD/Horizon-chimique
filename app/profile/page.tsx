@@ -31,10 +31,25 @@ export default function ProfilePage() {
     async function fetchUser() {
       if (!session?.user?.id) return;
       setLoadingUser(true);
-      const res = await fetch(`/api/user/${session.user.id}`);
-      const data = await res.json();
-      setUserData(data.user);
-      setLoadingUser(false);
+      try {
+        console.log('Fetching user data for ID:', session.user.id);
+        const res = await fetch(`/api/user/${session.user.id}`);
+        console.log('API Response status:', res.status);
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log('User data received:', data);
+          setUserData(data);
+        } else {
+          console.error('Failed to fetch user data:', res.status);
+          const errorText = await res.text();
+          console.error('Error response:', errorText);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setLoadingUser(false);
+      }
     }
     fetchUser();
   }, [session?.user?.id]);
@@ -158,11 +173,10 @@ export default function ProfilePage() {
       }
 
       const data = await response.json();
-      if (data.user) {
-        setUserData(data.user);
-        setShowEdit(false);
-        alert("Profil mis à jour avec succès !");
-      }
+      console.log('Updated user data:', data);
+      setUserData(data);
+      setShowEdit(false);
+      alert("Profil mis à jour avec succès !");
     } catch (error) {
       console.error('Erreur:', error);
       alert("Une erreur s'est produite lors de la mise à jour du profil");

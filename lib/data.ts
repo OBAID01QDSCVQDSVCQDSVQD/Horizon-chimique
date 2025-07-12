@@ -974,7 +974,7 @@ const data: Data = {
     products,
     users,
     headerMenus: [
-      {
+        {
         name: 'Solutions',
         href: '/solutions',
       },

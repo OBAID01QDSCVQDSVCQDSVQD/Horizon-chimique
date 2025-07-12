@@ -2,9 +2,17 @@
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { FaSearch } from 'react-icons/fa'
+import { FaSearch, FaCalendarAlt, FaTools, FaCheckCircle, FaClock, FaExclamationTriangle } from 'react-icons/fa'
 import { FiDownload } from 'react-icons/fi'
 import { toast } from 'react-hot-toast'
+
+interface MaintenanceSchedule {
+  date: string
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+  type: string
+  cost: number
+  notes: string
+}
 
 interface Garantie {
   _id: string
@@ -22,6 +30,14 @@ interface Garantie {
   status: string
   createdAt: string
   userId?: string
+  // الحقول الجديدة
+  garantieStatus?: string
+  lastMaintenanceDate?: string
+  nextMaintenanceDate?: string
+  maintenanceCount?: number
+  totalMaintenanceCost?: number
+  // أوقات الصيانة المحدثة
+  maintenanceSchedule?: MaintenanceSchedule[]
 }
 
 export default function GarantieIndex() {
@@ -136,6 +152,60 @@ export default function GarantieIndex() {
     }
   };
 
+  // دالة لتنسيق التاريخ
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    return dateString.split('-').reverse().join('/');
+  };
+
+  // دالة للحصول على أيقونة حالة الصيانة
+  const getMaintenanceStatusIcon = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return <FaCheckCircle className="text-green-500" />;
+      case 'IN_PROGRESS':
+        return <FaTools className="text-blue-500" />;
+      case 'PENDING':
+        return <FaClock className="text-yellow-500" />;
+      case 'CANCELLED':
+        return <FaExclamationTriangle className="text-red-500" />;
+      default:
+        return <FaCalendarAlt className="text-gray-500" />;
+    }
+  };
+
+  // دالة للحصول على نص حالة الصيانة
+  const getMaintenanceStatusText = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'Terminée';
+      case 'IN_PROGRESS':
+        return 'En cours';
+      case 'PENDING':
+        return 'En attente';
+      case 'CANCELLED':
+        return 'Annulée';
+      default:
+        return 'Inconnue';
+    }
+  };
+
+  // دالة للحصول على لون حالة الصيانة
+  const getMaintenanceStatusColor = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <div className="max-w-4xl mx-auto p-4 flex-1">
@@ -146,10 +216,10 @@ export default function GarantieIndex() {
           </div>
           {session?.user?.id && ['APPLICATEUR', 'ADMIN'].includes(session?.user?.role ?? '') && (
             <Link
-              href="/garantie/create"
+              href="/admin/garanties"
               className="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded-xl text-base shadow transition"
             >
-              + Ajouter une garantie
+              Gérer les garanties
             </Link>
           )}
         </div>
@@ -234,7 +304,7 @@ export default function GarantieIndex() {
                         {downloadingPDFs.has(g._id) ? (
                           <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                         ) : (
-                          <FiDownload className="w-4 h-4" />
+                        <FiDownload className="w-4 h-4" />
                         )}
                       </button>
                     )}
@@ -256,12 +326,100 @@ export default function GarantieIndex() {
                         .join(', ')
                     : '-'}
                 </div>
-                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Date d'installation :</b> {g.installDate?.split('-').reverse().join('/')}</div>
+                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Date d'installation :</b> {formatDate(g.installDate)}</div>
                 <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Montant :</b> {g.montant} DT</div>
                 <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Durée :</b> {g.duration} ans</div>
                 
-                {/* Section des maintenances */}
-                {g.maintenances && g.maintenances.length > 0 && (
+                {/* حالة الضمان الجديدة */}
+                {g.garantieStatus && (
+                  <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                    <b>État de la garantie :</b>
+                    <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                      g.garantieStatus === 'ACTIVE' 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : g.garantieStatus === 'EXPIRED'
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                    }`}>
+                      {g.garantieStatus === 'ACTIVE' ? 'Active' : 
+                       g.garantieStatus === 'EXPIRED' ? 'Expirée' : 'Annulée'}
+                    </span>
+                  </div>
+                )}
+                
+                {/* معلومات الصيانة الجديدة */}
+                {g.maintenanceCount !== undefined && (
+                  <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                    <b>Maintenances effectuées :</b> {g.maintenanceCount}
+                  </div>
+                )}
+                
+                {g.totalMaintenanceCost !== undefined && g.totalMaintenanceCost > 0 && (
+                  <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                    <b>Coût total des maintenances :</b> {g.totalMaintenanceCost} DT
+                  </div>
+                )}
+                
+                {g.nextMaintenanceDate && (
+                  <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                    <b>Prochaine maintenance :</b> {formatDate(g.nextMaintenanceDate)}
+                  </div>
+                )}
+                
+                {g.lastMaintenanceDate && (
+                  <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                    <b>Dernière maintenance :</b> {formatDate(g.lastMaintenanceDate)}
+                  </div>
+                )}
+                
+                {/* أوقات الصيانة المحدثة */}
+                {g.maintenanceSchedule && g.maintenanceSchedule.length > 0 && (
+                  <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                    <b>Planning de maintenance :</b>
+                    <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
+                      {g.maintenanceSchedule
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                        .map((maintenance, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-sm transition-shadow">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0">
+                              {getMaintenanceStatusIcon(maintenance.status)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-gray-900 dark:text-gray-100">
+                                {formatDate(maintenance.date)}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <span className="capitalize">{maintenance.type?.toLowerCase()}</span>
+                                {maintenance.notes && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="truncate max-w-32" title={maintenance.notes}>
+                                      {maintenance.notes}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getMaintenanceStatusColor(maintenance.status)}`}>
+                              {getMaintenanceStatusText(maintenance.status)}
+                            </span>
+                            {maintenance.cost > 0 && (
+                              <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                                {maintenance.cost} DT
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Section des maintenances القديمة للتوافق */}
+                {g.maintenances && g.maintenances.length > 0 && !g.maintenanceSchedule && (
                   <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
                     <b>Maintenances prévues :</b>
                     <div className="mt-1 space-y-1">
@@ -284,7 +442,9 @@ export default function GarantieIndex() {
                   </div>
                 )}
                 
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Créée le : {g.createdAt?.slice(0,10).split('-').reverse().join('/')}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Créée le : {formatDate(g.createdAt?.slice(0,10))}</div>
+                
+
               </div>
             ))}
           </div>

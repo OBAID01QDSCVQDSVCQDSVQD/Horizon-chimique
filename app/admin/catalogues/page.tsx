@@ -808,7 +808,7 @@ export default function AdminCataloguesPage() {
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    English en
+                    🇬🇧 Anglais
                   </button>
                   <button
                     type="button"
@@ -819,7 +819,7 @@ export default function AdminCataloguesPage() {
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    TN العربية
+                    🇹🇳 العربية
                   </button>
                 </div>
 
@@ -952,7 +952,7 @@ export default function AdminCataloguesPage() {
                 {activeTab === 'en' && (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-medium">English Content</h3>
+                      <h3 className="text-lg font-medium">Contenu Anglais</h3>
                       <Button
                         type="button"
                         variant="outline"
@@ -964,11 +964,11 @@ export default function AdminCataloguesPage() {
                         }}
                         disabled={isTranslating}
                       >
-                        {isTranslating ? 'Translating...' : '🔄 Auto-translate from French'}
+                        {isTranslating ? 'Traduction en cours...' : '🔄 Traduction automatique depuis le français'}
                       </Button>
                     </div>
                                          <div className="grid grid-cols-4 items-center gap-4">
-                       <label className="text-right">Title</label>
+                       <label className="text-right">Titre</label>
                        <div className="col-span-3 flex gap-2">
                          <Input
                            value={formData.title_en}
@@ -989,7 +989,7 @@ export default function AdminCataloguesPage() {
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
-                         <label className="block text-left">Short Description</label>
+                         <label className="block text-left">Courte Description</label>
                          <div className="flex gap-2">
                            <EmojiButton fieldName="shortdesc_en" />
                            <Button
@@ -1033,7 +1033,7 @@ export default function AdminCataloguesPage() {
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
-                         <label className="block text-left">Application Domain</label>
+                         <label className="block text-left">Domaine d'application</label>
                          <div className="flex gap-2">
                            <EmojiButton fieldName="domaine_en" />
                            <Button
@@ -1055,7 +1055,7 @@ export default function AdminCataloguesPage() {
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
-                         <label className="block text-left">Characteristics & Advantages</label>
+                         <label className="block text-left">Caractéristiques et Avantages</label>
                          <div className="flex gap-2">
                            <EmojiButton fieldName="proprietes_en" />
                            <Button
@@ -1077,7 +1077,7 @@ export default function AdminCataloguesPage() {
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
-                         <label className="block text-left">Surface Preparation</label>
+                         <label className="block text-left">Préparation du support</label>
                          <div className="flex gap-2">
                            <EmojiButton fieldName="preparation_en" />
                            <Button
@@ -1099,7 +1099,7 @@ export default function AdminCataloguesPage() {
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
-                         <label className="block text-left">Application Conditions</label>
+                         <label className="block text-left">Conditions d'application</label>
                          <div className="flex gap-2">
                            <EmojiButton fieldName="conditions_en" />
                            <Button
@@ -1143,7 +1143,7 @@ export default function AdminCataloguesPage() {
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
-                         <label className="block text-left">Consumption</label>
+                         <label className="block text-left">Consommation</label>
                          <div className="flex gap-2">
                            <EmojiButton fieldName="consommation_en" />
                            <Button
@@ -1165,7 +1165,7 @@ export default function AdminCataloguesPage() {
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
-                         <label className="block text-left">Equipment Cleaning</label>
+                         <label className="block text-left">Nettoyage des équipements</label>
                          <div className="flex gap-2">
                            <EmojiButton fieldName="nettoyage_en" />
                            <Button
@@ -1187,7 +1187,7 @@ export default function AdminCataloguesPage() {
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
-                         <label className="block text-left">Storage</label>
+                         <label className="block text-left">Stockage</label>
                          <div className="flex gap-2">
                            <EmojiButton fieldName="stockage_en" />
                            <Button
@@ -1209,7 +1209,7 @@ export default function AdminCataloguesPage() {
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
-                         <label className="block text-left">Safety Instructions</label>
+                         <label className="block text-left">Consignes de sécurité</label>
                          <div className="flex gap-2">
                            <EmojiButton fieldName="consignes_en" />
                            <Button

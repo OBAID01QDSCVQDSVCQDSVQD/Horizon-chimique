@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import authConfig from '@/auth.config';
 import { connectToDatabase } from '@/lib/db';
 import User from '@/lib/db/models/user.model';
 
 export async function PUT(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authConfig);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -68,13 +68,13 @@ export async function PUT(req: Request) {
       session.user.id,
       updateFields,
       { new: true }
-    );
+    ).select('name email company role phone address bio profileImage companyLogo matriculeFiscale website socialMedia whatsapp createdAt updatedAt');
 
     if (!updatedUser) {
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
     }
 
-    return NextResponse.json({ user: updatedUser });
+    return NextResponse.json(updatedUser);
   } catch (error) {
     console.error('Erreur lors de la mise à jour du profil:', error);
     return NextResponse.json(

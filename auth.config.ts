@@ -31,17 +31,21 @@ const authConfig: AuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      // إذا المستخدم تسجل، نحفظ الـ id في التوكن
+      // إذا المستخدم تسجل، نحفظ الـ id والـ role والـ company في التوكن
       if (user) {
         token.id = (user as any).id || (user as any)._id
+        token.role = (user as any).role
+        token.company = (user as any).company
       }
       return token
     },
 
     async session({ session, token }) {
-      // نمرر الـ id الموجود في التوكن إلى session.user
+      // نمرر الـ id والـ role والـ company الموجود في التوكن إلى session.user
       if (session.user) {
         session.user.id = token.id as string
+        session.user.role = token.role as string
+        session.user.company = token.company as string
       }
       return session
     },

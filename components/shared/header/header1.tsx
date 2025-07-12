@@ -5,7 +5,23 @@ import { useTheme } from '@/lib/use-theme';
 export default function TopHeader() {
   const { theme, toggleTheme, isMounted } = useTheme();
 
-  if (!isMounted) return null;
+  // Don't render until mounted to prevent hydration mismatch
+  if (!isMounted) {
+    return (
+      <div className="w-full bg-[#2d3442] text-white text-sm h-10 flex items-center justify-between px-6">
+        {/* Placeholder content for SSR */}
+        <div className="flex items-center gap-3">
+          <div className="bg-[#232936] text-xs font-bold px-3 py-1 rounded-full w-12 h-6"></div>
+          <div className="w-32 h-4 bg-gray-600 rounded"></div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="w-6 h-6 bg-gray-600 rounded"></div>
+          <div className="w-6 h-6 bg-gray-600 rounded"></div>
+          <div className="w-6 h-6 bg-gray-600 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-[#2d3442] text-white text-sm h-10 flex items-center justify-between px-6">

@@ -754,7 +754,7 @@ export default function CreateProductPage() {
                       </option>
                     ))
                   ) : (
-                    <option value="" disabled>لا توجد فئات متاحة</option>
+                    <option value="" disabled>Aucune catégorie disponible</option>
                   )}
                 </select>
               </div>
@@ -783,7 +783,7 @@ export default function CreateProductPage() {
                       </option>
                     ))
                   ) : (
-                    <option value="" disabled>لا توجد أوراق بيانات متاحة</option>
+                    <option value="" disabled>Aucune fiche technique disponible</option>
                   )}
                 </select>
                 {cataloguesError && (
@@ -801,7 +801,7 @@ export default function CreateProductPage() {
           <h2 className="text-xl font-semibold">Attributs</h2>
         </div>
         {attributes.length === 0 ? (
-          <div className="text-gray-400">لا توجد سمات متاحة.</div>
+                      <div className="text-gray-400">Aucun attribut disponible.</div>
         ) : (
           attributes.map(attr => (
             <div key={attr._id} className="mb-2">

@@ -158,7 +158,7 @@ export default function AdminGarantiesPage() {
           <h1 className="text-2xl font-bold text-blue-700">Mes garanties</h1>
           {['APPLICATEUR', 'ADMIN'].includes(session?.user?.role ?? '') && (
             <Link
-              href="/garantie/create"
+              href="/admin/garanties/create"
               className="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded-xl text-base shadow transition"
             >
               + Ajouter une nouvelle garantie

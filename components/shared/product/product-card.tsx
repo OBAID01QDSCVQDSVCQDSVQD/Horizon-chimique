@@ -43,7 +43,7 @@ const ProductCard = ({
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-100">
-            <span className="text-gray-400">لا توجد صورة متاحة</span>
+                            <span className="text-gray-400">Aucune image disponible</span>
           </div>
         )}
       </div>

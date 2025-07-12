@@ -23,15 +23,21 @@ export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [lang, setLang] = useState('EN');
+  const [lang, setLang] = useState('FR');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<IProduct[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [isMounted, setIsMounted] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 500);
   const user = null;
   const { data: session } = useSession();
   const [categories, setCategories] = useState<{ name: string; slug: string }[]>([]);
+
+  // Ensure client-side only operations
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const searchProducts = async () => {
@@ -60,9 +66,18 @@ export default function Header() {
 
   useEffect(() => {
     async function fetchCategories() {
-      const res = await fetch('/api/categories/list');
-      const data = await res.json();
-      setCategories(data.categories || []);
+      try {
+        const res = await fetch('/api/categories/list');
+        if (!res.ok) {
+          setCategories([]);
+          return;
+        }
+        const data = await res.json();
+        setCategories(data.categories || []);
+      } catch (error) {
+        setCategories([]);
+        console.error('fetchCategories error:', error);
+      }
     }
     fetchCategories();
   }, []);
@@ -79,6 +94,24 @@ export default function Header() {
     setDarkMode((prev) => !prev);
     document.documentElement.classList.toggle('dark');
   };
+
+  // Don't render until mounted to prevent hydration mismatch
+  if (!isMounted) {
+    return (
+      <header className="sticky top-0 z-50 bg-[#131921] text-white w-full">
+        <div className="flex items-center justify-between px-2 md:px-4 py-1 w-full h-12 md:h-16">
+          {/* Placeholder content for SSR */}
+          <div className="flex items-center">
+            <div className="w-[40px] h-[28px] md:w-[60px] md:h-[40px] bg-gray-600 rounded"></div>
+          </div>
+          <div className="hidden md:flex flex-1 mx-2 md:mx-4 h-8 md:h-10 max-w-xs md:max-w-2xl bg-gray-600 rounded"></div>
+          <div className="flex items-center gap-1 md:gap-2 w-auto flex-shrink-0">
+            <div className="w-6 h-6 bg-gray-600 rounded"></div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-[#131921] text-white w-full">
@@ -282,10 +315,10 @@ export default function Header() {
             <div className="flex items-center gap-3 mb-6">
               <button
                 className="flex items-center gap-1 text-white hover:text-yellow-400 font-bold px-2 py-1 rounded transition border border-gray-600"
-                onClick={() => setLang(lang === 'EN' ? 'FR' : 'EN')}
+                onClick={() => setLang(lang === 'FR' ? 'EN' : 'FR')}
               >
                 <FaGlobe />
-                <span>{lang === 'EN' ? 'FR' : 'EN'}</span>
+                <span>{lang === 'FR' ? 'EN' : 'FR'}</span>
               </button>
               <button
                 className="flex items-center gap-1 text-white hover:text-yellow-400 font-bold px-2 py-1 rounded transition border border-gray-600"

@@ -28,12 +28,64 @@ export default function GarantiePage() {
   ];
   const [selectedSurfaces, setSelectedSurfaces] = useState<string[]>([]);
   const [surfaceValues, setSurfaceValues] = useState<{ [key: string]: string }>({});
-
+  const [isLoadingCompany, setIsLoadingCompany] = useState(true);
   useEffect(() => {
-    if (session?.user?.name) {
-      setForm(f => ({ ...f, company: session.user.name ?? '' }))
+    console.log('Session debug:', {
+      userId: session?.user?.id,
+      email: session?.user?.email,
+      name: session?.user?.name,
+      company: session?.user?.company,
+      role: session?.user?.role
+    })
+    
+    if (session?.user?.id) {
+      fetchUserCompany()
+    } else if (session?.user?.email) {
+      fetchUserByEmail()
     }
-  }, [session?.user?.name])
+  }, [session?.user?.id, session?.user?.email])
+
+  const fetchUserCompany = async () => {
+    try {
+      setIsLoadingCompany(true)
+      const response = await fetch(`/api/user/${session?.user?.id}`)
+      if (response.ok) {
+        const userData = await response.json()
+        console.log('User data from API:', userData)
+        const company = userData.company || 'HORIZON CHIMIQUE'
+        setForm(f => ({ ...f, company }))
+      } else {
+        console.error('Failed to fetch user data:', response.status)
+        setForm(f => ({ ...f, company: 'HORIZON CHIMIQUE' }))
+      }
+    } catch (error) {
+      console.error('Error fetching user company:', error)
+      setForm(f => ({ ...f, company: 'HORIZON CHIMIQUE' }))
+    } finally {
+      setIsLoadingCompany(false)
+    }
+  }
+
+  const fetchUserByEmail = async () => {
+    try {
+      setIsLoadingCompany(true)
+      const response = await fetch(`/api/user/search?email=${session?.user?.email}`)
+      if (response.ok) {
+        const userData = await response.json()
+        console.log('User data from email search:', userData)
+        const company = userData.company || 'HORIZON CHIMIQUE'
+        setForm(f => ({ ...f, company }))
+      } else {
+        console.error('Failed to fetch user by email:', response.status)
+        setForm(f => ({ ...f, company: 'HORIZON CHIMIQUE' }))
+      }
+    } catch (error) {
+      console.error('Error fetching user by email:', error)
+      setForm(f => ({ ...f, company: 'HORIZON CHIMIQUE' }))
+    } finally {
+      setIsLoadingCompany(false)
+    }
+  }
 
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -79,7 +131,7 @@ export default function GarantiePage() {
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        router.push('/garantie')
+        router.push('/admin/garanties')
       } else {
         alert('Erreur: ' + (data.error || 'Impossible d\'enregistrer la garantie'))
       }
@@ -93,7 +145,7 @@ export default function GarantiePage() {
       <h1 className="text-2xl font-bold mb-4 text-blue-700">Ajouter une nouvelle garantie</h1>
       <p className="mb-6 text-gray-700 dark:text-gray-300">Remplissez les détails ci-dessous pour enregistrer une nouvelle garantie :</p>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* بيانات العميل */}
+        {/* Informations du client */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-blue-800 mb-2">Informations du client</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -108,7 +160,7 @@ export default function GarantiePage() {
           </div>
         </div>
 
-        {/* بيانات الأشغال */}
+        {/* Informations sur les travaux */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-blue-800 mb-2">Informations sur les travaux</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -116,12 +168,15 @@ export default function GarantiePage() {
               <label className="block mb-1 font-medium">Nom de la société</label>
               <input
                 name="company"
-                value={form.company}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                value={isLoadingCompany ? 'Chargement...' : form.company}
+                className="w-full border rounded px-3 py-2 bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
                 required
-                readOnly={!!session?.user?.name}
+                readOnly
+                disabled
               />
+              <p className="text-xs text-gray-500 mt-1">
+                {isLoadingCompany ? 'Récupération du nom de la société...' : 'Nom de la société non modifiable'}
+              </p>
             </div>
             <div>
               <label className="block mb-1 font-medium">Adresse des travaux</label>
@@ -167,7 +222,7 @@ export default function GarantiePage() {
           </div>
         </div>
 
-        {/* بيانات الضمان */}
+        {/* Détails de la garantie */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-blue-800 mb-2">Détails de la garantie</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -182,7 +237,7 @@ export default function GarantiePage() {
           </div>
         </div>
 
-        {/* بيانات الصيانة */}
+        {/* Maintenance */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-blue-800 mb-2">Maintenance</h2>
           <label className="block mb-1 font-medium">Périodes de maintenance ou dates de service (si applicable)</label>
@@ -205,7 +260,7 @@ export default function GarantiePage() {
           </div>
         </div>
 
-        {/* ملاحظات */}
+        {/* Notes */}
         <div>
           <label className="block mb-1 font-medium">Notes ou instructions spécifiques</label>
           <textarea name="notes" value={form.notes} onChange={handleChange} className="w-full border rounded px-3 py-2" rows={3} />

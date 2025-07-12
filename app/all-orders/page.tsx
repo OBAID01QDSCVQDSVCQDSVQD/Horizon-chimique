@@ -172,7 +172,7 @@ export default function AllOrdersPage() {
 
           <input
             type="text"
-            placeholder="البحث برقم الهاتف"
+                          placeholder="Rechercher par numéro de téléphone"
             className="border rounded-lg p-2 dark:bg-gray-700 dark:border-gray-600"
             value={filters.phone}
             onChange={(e) => setFilters({ ...filters, phone: e.target.value })}
@@ -180,7 +180,7 @@ export default function AllOrdersPage() {
 
           <input
             type="text"
-            placeholder="البحث باسم العميل"
+                          placeholder="Rechercher par nom du client"
             className="border rounded-lg p-2 dark:bg-gray-700 dark:border-gray-600"
             value={filters.client}
             onChange={(e) => setFilters({ ...filters, client: e.target.value })}
@@ -291,7 +291,7 @@ export default function AllOrdersPage() {
                       />
                     ) : (
                       <div className="w-16 h-16 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded border text-gray-400 text-xs">
-                        لا توجد صورة
+                        Aucune image
                       </div>
                     )}
                     <div className="flex-1">
@@ -328,7 +328,7 @@ export default function AllOrdersPage() {
 
         {filteredOrders.length === 0 && (
           <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-            لا توجد طلبات تطابق معايير البحث
+            Aucune commande ne correspond aux critères de recherche
           </div>
         )}
       </div>

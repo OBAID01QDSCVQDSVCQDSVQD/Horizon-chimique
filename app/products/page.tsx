@@ -60,7 +60,7 @@ export default function ProductsPage() {
 
       {products.length === 0 ? (
         <div className="text-center py-12">
-          <h2 className="text-xl text-gray-600">لا توجد منتجات</h2>
+          <h2 className="text-xl text-gray-600">Aucun produit trouvé</h2>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

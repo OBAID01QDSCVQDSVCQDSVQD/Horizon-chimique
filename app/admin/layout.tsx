@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar, FiShield, FiFileText } from 'react-icons/fi'
+import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar, FiShield, FiFileText, FiTool } from 'react-icons/fi'
 import { useEffect, useState, useRef } from 'react'
 import ErrorBoundary from '@/components/shared/ErrorBoundary'
 import { Toaster } from 'react-hot-toast'
@@ -40,6 +40,11 @@ const menuItems = [
     title: 'Garanties',
     href: '/admin/garanties',
     icon: FiShield
+  },
+  {
+    title: 'Maintenance',
+    href: '/admin/maintenance',
+    icon: FiTool
   },
   {
     title: 'Paramètres',
@@ -94,7 +99,31 @@ export default function AdminLayout({
   return (
     <ErrorBoundary>
       <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-950">
-        <Toaster position="bottom-right" />
+        <Toaster 
+          position="bottom-right"
+          toastOptions={{
+            success: {
+              style: {
+                background: '#10b981',
+                color: 'white',
+              },
+              iconTheme: {
+                primary: 'white',
+                secondary: '#10b981',
+              },
+            },
+            error: {
+              style: {
+                background: '#ef4444',
+                color: 'white',
+              },
+              iconTheme: {
+                primary: 'white',
+                secondary: '#ef4444',
+              },
+            },
+          }}
+        />
         <main className="flex flex-row flex-1">
           {/* Sidebar */}
           <div className="relative md:w-40 w-0">

@@ -65,13 +65,13 @@ function SearchResults() {
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">
-          نتائج البحث: {query}
+          Résultats de recherche: {query}
         </h1>
       </div>
 
       {products.length === 0 ? (
         <div className="text-center py-12">
-          <h2 className="text-xl text-gray-600">لا توجد نتائج للبحث</h2>
+          <h2 className="text-xl text-gray-600">Aucun résultat trouvé</h2>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

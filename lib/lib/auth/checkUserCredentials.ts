@@ -17,5 +17,6 @@ export async function checkUserCredentials({ email, password }: { email?: string
     name: user.name,
     email: user.email,
     role: user.role,
+    company: user.company,
   }
 }

@@ -34,10 +34,10 @@ export default function CartPage() {
         {items.length === 0 ? (
           <Card className='col-span-4 rounded-none'>
             <CardHeader className='text-3xl  '>
-              Your Shopping Cart is empty
+              Votre panier est vide
             </CardHeader>
             <CardContent>
-              Continue shopping on <Link href='/'>{APP_NAME}</Link>
+              Continuez vos achats sur <Link href='/'>{APP_NAME}</Link>
             </CardContent>
           </Card>
         ) : (
@@ -45,10 +45,10 @@ export default function CartPage() {
             <div className='col-span-3'>
               <Card className='rounded-none'>
                 <CardHeader className='text-3xl pb-0'>
-                  Shopping Cart
+                  Panier d'achat
                 </CardHeader>
                 <CardContent className='p-4'>
-                  <div className='flex justify-end border-b mb-4'>Price</div>
+                  <div className='flex justify-end border-b mb-4'>Prix</div>
 
                   {items.map((item) => (
                     <div
@@ -89,10 +89,10 @@ export default function CartPage() {
                           ) : (
                             <>
                               <p className='text-sm'>
-                                <span className='font-bold'>Color: </span> {item.color}
+                                <span className='font-bold'>Couleur: </span> {item.color}
                               </p>
                               <p className='text-sm'>
-                                <span className='font-bold'>Size: </span> {item.size}
+                                <span className='font-bold'>Taille: </span> {item.size}
                               </p>
                             </>
                           )}
@@ -106,7 +106,7 @@ export default function CartPage() {
                           >
                             <SelectTrigger className='w-auto'>
                               <SelectValue>
-                                Quantity: {item.quantity}
+                                Quantité: {item.quantity}
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent position='popper'>
@@ -123,7 +123,7 @@ export default function CartPage() {
                             variant={'outline'}
                             onClick={() => removeItem(item)}
                           >
-                            Delete
+                            Supprimer
                           </Button>
                         </div>
                       </div>
@@ -149,9 +149,9 @@ export default function CartPage() {
                   ))}
 
                   <div className='flex justify-end text-lg my-2'>
-                    Subtotal (
+                    Sous-total (
                     {items.reduce((acc, item) => acc + item.quantity, 0)}{' '}
-                    Items):{' '}
+                    articles):{' '}
                     <span className='font-bold ml-1'>
                       <ProductPrice price={itemsPrice} plain />
                     </span>{' '}
@@ -164,28 +164,27 @@ export default function CartPage() {
                 <CardContent className='py-4 space-y-4'>
                   {itemsPrice < FREE_SHIPPING_MIN_PRICE ? (
                     <div className='flex-1'>
-                      Add{' '}
+                      Ajoutez{' '}
                       <span className='text-green-700'>
                         <ProductPrice
                           price={FREE_SHIPPING_MIN_PRICE - itemsPrice}
                           plain
                         />
                       </span>{' '}
-                      of eligible items to your order to qualify for FREE
-                      Shipping
+                      d'articles éligibles à votre commande pour bénéficier de la livraison GRATUITE
                     </div>
                   ) : (
                     <div className='flex-1'>
                       <span className='text-green-700'>
-                        Your order qualifies for FREE Shipping
+                        Votre commande est éligible à la livraison GRATUITE
                       </span>{' '}
-                      Choose this option at checkout
+                      Choisissez cette option lors du paiement
                     </div>
                   )}
                   <div className='text-lg'>
-                    Subtotal (
+                    Sous-total (
                     {items.reduce((acc, item) => acc + item.quantity, 0)}{' '}
-                    items):{' '}
+                    articles):{' '}
                     <span className='font-bold'>
                       <ProductPrice price={itemsPrice} plain />
                     </span>{' '}
@@ -194,7 +193,7 @@ export default function CartPage() {
                     onClick={() => router.push('/checkout')}
                     className='rounded-full w-full'
                   >
-                    Proceed to Checkout
+                    Procéder au paiement
                   </Button>
                 </CardContent>
               </Card>

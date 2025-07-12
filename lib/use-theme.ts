@@ -6,11 +6,18 @@ export function useTheme() {
 
   useEffect(() => {
     setIsMounted(true);
-    // تحقق من الوضع المحفوظ في localStorage
+    // Check for saved theme preference or default to light mode
     const saved = localStorage.getItem('theme');
     if (saved === 'dark' || saved === 'light') {
       setTheme(saved);
       document.documentElement.classList.toggle('dark', saved === 'dark');
+    } else {
+      // Check system preference if no saved theme
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const defaultTheme = prefersDark ? 'dark' : 'light';
+      setTheme(defaultTheme);
+      document.documentElement.classList.toggle('dark', defaultTheme === 'dark');
+      localStorage.setItem('theme', defaultTheme);
     }
   }, []);
 

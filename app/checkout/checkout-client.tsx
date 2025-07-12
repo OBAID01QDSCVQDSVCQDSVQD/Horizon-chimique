@@ -209,10 +209,10 @@ export default function CheckoutPage() {
 
       <div className="space-y-6">
         <Card>
-          <CardHeader className="text-lg font-semibold">Review Your Cart</CardHeader>
+          <CardHeader className="text-lg font-semibold">Récapitulatif du panier</CardHeader>
           <CardContent className="space-y-4">
             {items.length === 0 ? (
-              <p className="text-gray-500">Your cart is empty.</p>
+              <p className="text-gray-500">Votre panier est vide.</p>
             ) : (
               <div className="space-y-4">
                 {items.map((item) => (
@@ -228,7 +228,7 @@ export default function CheckoutPage() {
                     <div className="flex-1">
                       <p className="font-semibold">{item.name}</p>
                       <p className="text-sm text-gray-500">
-                        Qty: {item.quantity}
+                        Qté: {item.quantity}
                         {(item as any).attributes && (item as any).attributes.length > 0 && (
                           <>
                             {(item as any).attributes.map((attr: any, idx: number) => (
@@ -259,7 +259,7 @@ export default function CheckoutPage() {
         </Card>
 
         <div className="text-sm text-gray-500 text-center">
-          🔒 Secure Checkout - SSL Encrypted
+          🔒 Paiement sécurisé - SSL chiffré
         </div>
       </div>
     </div>
