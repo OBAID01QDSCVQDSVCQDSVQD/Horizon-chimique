@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { FaSearch, FaCalendarAlt, FaTools, FaCheckCircle, FaClock, FaExclamationTriangle } from 'react-icons/fa'
+import { FaSearch, FaCalendarAlt, FaTools, FaCheckCircle, FaClock, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa'
 import { FiDownload } from 'react-icons/fi'
 import { toast } from 'react-hot-toast'
 
@@ -47,28 +47,34 @@ export default function GarantieIndex() {
   const [searchPhone, setSearchPhone] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [downloadingPDFs, setDownloadingPDFs] = useState<Set<string>>(new Set())
+  const [error, setError] = useState<string | null>(null)
+  const [hasSearched, setHasSearched] = useState(false)
+
+  const isAdmin = session?.user?.role === 'ADMIN'
+  const isApplicateur = session?.user?.role === 'APPLICATEUR'
+  const isAuthenticated = !!session?.user?.id
 
   useEffect(() => {
     if (status === 'loading') return;
-    // إزالة شرط تسجيل الدخول للسماح بالبحث بدون تسجيل دخول
-    // if (!session?.user?.id) {
-    //   console.log('=== SESSION DEBUG ===');
-    //   console.log('Session status:', status);
-    //   console.log('Session data:', session);
-    //   console.log('User ID:', session?.user?.id);
-    //   setLoading(false);
-    //   return;
-    // }
+    
     console.log('=== SESSION DEBUG ===');
     console.log('User authenticated:', session?.user?.id);
     console.log('User role:', session?.user?.role);
-    fetchGaranties();
-  }, [session, status])
+    
+    // إذا كان المستخدم مدير أو مقدم طلب، يمكنه رؤية جميع الضمانات
+    if (isAdmin || isApplicateur) {
+      fetchGaranties();
+    } else {
+      // المستخدمون العاديون والزوار يحتاجون للبحث برقم هاتف
+      setLoading(false);
+      setHasSearched(false);
+    }
+  }, [session, status, isAdmin, isApplicateur])
 
   async function fetchGaranties(phone?: string) {
     setLoading(true)
+    setError(null)
     try {
-      // فلترة حسب الحالة المعتمدة فقط
       const query = phone ? { phone, status: 'APPROVED' } : { status: 'APPROVED' };
       const url = `/api/garanties?${new URLSearchParams(query as Record<string, string>)}`
       console.log('=== FRONTEND DEBUG ===');
@@ -81,20 +87,24 @@ export default function GarantieIndex() {
       console.log('API Response Status:', res.status);
       console.log('API Response Data:', data);
       
+      if (res.status === 403) {
+        setError(data.error || 'Vous devez fournir un numéro de téléphone pour rechercher des garanties');
+        setGaranties([]);
+        return;
+      }
+      
       if (res.ok && Array.isArray(data.garanties)) {
         console.log('Garanties from API:', data.garanties);
-        console.log('Garanties statuses:', data.garanties.map((g: any) => ({ id: g._id, status: g.status, company: g.company })));
-        
-        // تحقق إضافي من الضمانات المعتمدة فقط
-        const approvedOnly = data.garanties.filter((g: any) => g.status === 'APPROVED');
-        console.log('Approved only count:', approvedOnly.length);
-        console.log('Approved only:', approvedOnly.map((g: any) => ({ id: g._id, status: g.status, company: g.company })));
-        
-        // فلترة إضافية على الواجهة الأمامية للتأكد من عرض الضمانات المعتمدة فقط
-        setGaranties(approvedOnly);
+        setGaranties(data.garanties);
+        setHasSearched(true);
+      } else {
+        setError('Erreur lors du chargement des garanties');
+        setGaranties([]);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des garanties:', error);
+      setError('Erreur de connexion au serveur');
+      setGaranties([]);
     } finally {
       setLoading(false)
     }
@@ -102,6 +112,10 @@ export default function GarantieIndex() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!searchPhone.trim()) {
+      toast.error('Veuillez entrer un numéro de téléphone');
+      return;
+    }
     fetchGaranties(searchPhone);
   };
 
@@ -212,7 +226,12 @@ export default function GarantieIndex() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-blue-700">Rechercher des garanties</h1>
-            <p className="text-sm text-gray-600 mt-1">Recherchez les garanties approuvées par numéro de téléphone</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {isAdmin || isApplicateur 
+                ? 'Gérez et recherchez toutes les garanties approuvées'
+                : 'Recherchez vos garanties par numéro de téléphone'
+              }
+            </p>
           </div>
           {session?.user?.id && ['APPLICATEUR', 'ADMIN'].includes(session?.user?.role ?? '') && (
             <Link
@@ -224,13 +243,34 @@ export default function GarantieIndex() {
           )}
         </div>
 
+        {/* رسالة إعلامية للمستخدمين العاديين والزوار */}
+        {!isAdmin && !isApplicateur && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <FaInfoCircle className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-1">
+                  Recherche sécurisée
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Pour protéger votre vie privée, vous devez entrer votre numéro de téléphone exact pour voir vos garanties. 
+                  Seules les garanties approuvées associées à votre numéro de téléphone seront affichées.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Formulaire de recherche */}
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-4 mb-6">
           <form onSubmit={handleSearch}>
             <div className="flex flex-col md:flex-row gap-4 items-center">
               <div className="flex-1 w-full">
                 <label htmlFor="phoneSearch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Rechercher par numéro de téléphone
+                  {isAdmin || isApplicateur 
+                    ? 'Rechercher par numéro de téléphone (optionnel)'
+                    : 'Numéro de téléphone (obligatoire)'
+                  }
                 </label>
                 <div className="relative">
                   <input
@@ -238,8 +278,12 @@ export default function GarantieIndex() {
                     type="text"
                     value={searchPhone}
                     onChange={(e) => setSearchPhone(e.target.value)}
-                    placeholder="Entrez le numéro de téléphone..."
+                    placeholder={isAdmin || isApplicateur 
+                      ? "Entrez le numéro de téléphone pour filtrer..."
+                      : "Entrez votre numéro de téléphone exact..."
+                    }
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                    required={!isAdmin && !isApplicateur}
                   />
                   <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 </div>
@@ -250,14 +294,20 @@ export default function GarantieIndex() {
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-2"
                 >
                   <FaSearch />
-                  Rechercher
+                  {isAdmin || isApplicateur ? 'Rechercher' : 'Voir mes garanties'}
                 </button>
-                {searchPhone && (
+                {(searchPhone || (isAdmin || isApplicateur)) && (
                   <button
                     type="button"
                     onClick={() => {
                       setSearchPhone('');
-                      fetchGaranties();
+                      setError(null);
+                      if (isAdmin || isApplicateur) {
+                        fetchGaranties();
+                      } else {
+                        setGaranties([]);
+                        setHasSearched(false);
+                      }
                     }}
                     className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
                   >
@@ -269,12 +319,35 @@ export default function GarantieIndex() {
           </form>
         </div>
 
+        {/* رسالة الخطأ */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
+              <FaExclamationTriangle />
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
+
         {status === 'loading' || loading ? (
           <div className="text-center text-gray-500">Chargement...</div>
+        ) : !hasSearched && !isAdmin && !isApplicateur ? (
+          <div className="text-center text-gray-400">
+            <div className="max-w-md mx-auto">
+              <FaSearch className="text-6xl mx-auto mb-4 text-gray-300" />
+              <p className="text-lg mb-2">Recherchez vos garanties</p>
+              <p className="text-sm">Entrez votre numéro de téléphone ci-dessus pour voir vos garanties approuvées</p>
+            </div>
+          </div>
         ) : garanties.length === 0 ? (
           <div className="text-center text-gray-400">
             <p className="text-lg mb-2">Aucune garantie trouvée</p>
-            <p className="text-sm">Essayez un autre numéro de téléphone ou vérifiez que la garantie est approuvée</p>
+            <p className="text-sm">
+              {isAdmin || isApplicateur 
+                ? 'Essayez un autre numéro de téléphone ou vérifiez que la garantie est approuvée'
+                : 'Vérifiez que votre numéro de téléphone est correct et que vous avez des garanties approuvées'
+              }
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -443,8 +516,6 @@ export default function GarantieIndex() {
                 )}
                 
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Créée le : {formatDate(g.createdAt?.slice(0,10))}</div>
-                
-
               </div>
             ))}
           </div>
