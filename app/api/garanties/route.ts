@@ -48,11 +48,23 @@ export async function GET(request: Request) {
       
       // إضافة رقم الهاتف كشرط إجباري للبحث
       query.phone = searchPhone;
+      
+      // المستخدمون العاديون والزوار يرون فقط الضمانات المعتمدة
+      query.status = 'APPROVED';
+      
       console.log('Non-admin user search - phone required:', searchPhone);
+    } else {
+      // المديرون ومقدمو الطلبات يمكنهم رؤية جميع الضمانات
+      // إذا لم يتم تحديد حالة في البحث، لا نضيف فلترة للحالة
+      // إذا تم تحديد حالة، نستخدمها
+      if (!searchParams.get('status')) {
+        // لا نضيف فلترة للحالة - نعرض جميع الضمانات
+        console.log('Admin/Applicateur - showing all garanties');
+      } else {
+        // نستخدم الحالة المحددة في البحث
+        console.log('Admin/Applicateur - filtering by status:', searchParams.get('status'));
+      }
     }
-
-    // فلترة الضمانات المعتمدة فقط
-    query.status = 'APPROVED';
 
     console.log('Final Query:', JSON.stringify(query, null, 2));
     
