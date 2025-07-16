@@ -369,7 +369,7 @@ export default function CatalogueViewerPage() {
         
         .book-page:hover::before {
           opacity: 1;
-          animation: shimmer 12s ease-in-out infinite;
+          animation: shimmer 13s ease-in-out;
         }
         
         @keyframes shimmer {
