@@ -975,8 +975,8 @@ const data: Data = {
     users,
     headerMenus: [
         {
-        name: 'Solutions',
-        href: '/solutions',
+        name: 'Publications',
+        href: '/posts',
       },
       {
         name: 'Produits',
