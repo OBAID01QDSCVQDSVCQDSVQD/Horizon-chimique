@@ -21,28 +21,62 @@ export default function RendezVousPage() {
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [googleMapsUrl, setGoogleMapsUrl] = useState('');
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState('');
 
   // Load Google Maps
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: 'AIzaSyBAO3snch_u0rRwaW2R7C2KjTLaFWrKH9k',
   });
 
+  // Get user location automatically
+  const getCurrentLocation = () => {
+    setLocationLoading(true);
+    setLocationError('');
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const newLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setLocation(newLocation);
+          setGoogleMapsUrl(`https://maps.google.com/?q=${newLocation.lat},${newLocation.lng}`);
+          setLocationLoading(false);
+        },
+        (error) => {
+          setLocationLoading(false);
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              setLocationError('Permission de localisation refusée. Veuillez autoriser l\'accès à votre position.');
+              break;
+            case error.POSITION_UNAVAILABLE:
+              setLocationError('Informations de localisation non disponibles.');
+              break;
+            case error.TIMEOUT:
+              setLocationError('Délai d\'attente de localisation dépassé.');
+              break;
+            default:
+              setLocationError('Erreur lors de la détermination de la position.');
+          }
+          // Default to Tunis if denied
+          setLocation({ lat: 36.8065, lng: 10.1815 });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    } else {
+      setLocationLoading(false);
+      setLocationError('Votre navigateur ne prend pas en charge la géolocalisation.');
+      setLocation({ lat: 36.8065, lng: 10.1815 });
+    }
+  };
+
   // Get user location on page load
   useEffect(() => {
     if (!location) {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          },
-          () => {
-            // Default to Tunis if denied
-            setLocation({ lat: 36.8065, lng: 10.1815 });
-          }
-        );
-      } else {
-        setLocation({ lat: 36.8065, lng: 10.1815 });
-      }
+      getCurrentLocation();
     }
   }, []);
 
@@ -382,6 +416,45 @@ export default function RendezVousPage() {
                         <h3 className="text-xl font-semibold">Localisation</h3>
                       </div>
                       <div className="space-y-4">
+                        {/* Auto Location Button */}
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {locationLoading ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <span>Détermination de la position...</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                </svg>
+                                <span>Déterminer ma position automatiquement</span>
+                              </>
+                            )}
+                          </button>
+                          {location && (
+                            <div className="text-sm text-green-600 flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Position déterminée
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Location Error */}
+                        {locationError && (
+                          <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
+                            {locationError}
+                          </div>
+                        )}
+                        
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Carte interactive</label>
                           <div className="w-full h-64 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
@@ -391,7 +464,11 @@ export default function RendezVousPage() {
                                 center={location}
                                 zoom={15}
                                 onClick={e => {
-                                  if (e.latLng) setLocation({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+                                  if (e.latLng) {
+                                    const newLocation = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+                                    setLocation(newLocation);
+                                    setGoogleMapsUrl(`https://maps.google.com/?q=${newLocation.lat},${newLocation.lng}`);
+                                  }
                                 }}
                                 options={{ streetViewControl: false, mapTypeControl: false }}
                               >
@@ -399,7 +476,11 @@ export default function RendezVousPage() {
                                   position={location}
                                   draggable
                                   onDragEnd={e => {
-                                    if (e.latLng) setLocation({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+                                    if (e.latLng) {
+                                      const newLocation = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+                                      setLocation(newLocation);
+                                      setGoogleMapsUrl(`https://maps.google.com/?q=${newLocation.lat},${newLocation.lng}`);
+                                    }
                                   }}
                                 />
                               </GoogleMap>
