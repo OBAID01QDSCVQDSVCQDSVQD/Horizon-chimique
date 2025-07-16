@@ -983,6 +983,10 @@ const data: Data = {
         href: '/products',
       },
       {
+        name: 'Catalogue',
+        href: '/catalogue-viewer',
+      },
+      {
         name: 'Découvrir',
         href: '/discover',
       },

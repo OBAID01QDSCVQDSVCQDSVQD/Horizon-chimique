@@ -796,80 +796,87 @@ export default function AdminCataloguesPage() {
               Gérez les fiches techniques de produits
             </CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => resetForm()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nouvelle Fiche Technique
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingCatalogue ? 'Modifier la Fiche Technique' : 'Nouvelle Fiche Technique'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                {/* Language Tabs */}
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('fr')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      activeTab === 'fr'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    🇫🇷 Français
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('en')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors text-base ${
-                      activeTab === 'en'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    🇬🇧 Anglais
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('ar')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      activeTab === 'ar'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    🇹🇳 العربية
-                  </button>
-                </div>
+         
+            <Button
+              variant="outline"
+              onClick={() => window.open('/catalogue-viewer', '_blank')}
+            >
+              📖 Voir le Catalogue
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => resetForm()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle Fiche Technique
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingCatalogue ? 'Modifier la Fiche Technique' : 'Nouvelle Fiche Technique'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                  {/* Language Tabs */}
+                  <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('fr')}
+                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                        activeTab === 'fr'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      🇫🇷 Français
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('en')}
+                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors text-base ${
+                        activeTab === 'en'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      🇬🇧 Anglais
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('ar')}
+                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                        activeTab === 'ar'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      🇹🇳 العربية
+                    </button>
+                  </div>
 
-                {/* Content for each language */}
-                {activeTab === 'fr' && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Contenu en Français</h3>
-                <div className="grid grid-cols-4 items-center gap-4">
-                      <label htmlFor="title" className="text-right">Titre</label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="col-span-3"
-                  />
-                </div>
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label htmlFor="shortdesc" className="block text-left">Courte Description</label>
-                        <EmojiButton fieldName="shortdesc" />
+                  {/* Content for each language */}
+                  {activeTab === 'fr' && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Contenu en Français</h3>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <label htmlFor="title" className="text-right">Titre</label>
+                        <Input
+                          id="title"
+                          value={formData.title}
+                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          className="col-span-3"
+                        />
                       </div>
-                      <TiptapEditor
-                        content={formData.shortdesc}
-                        onChange={(newContent) => setFormData({ ...formData, shortdesc: newContent })}
-                      />
-                    </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label htmlFor="shortdesc" className="block text-left">Courte Description</label>
+                          <EmojiButton fieldName="shortdesc" />
+                        </div>
+                        <TiptapEditor
+                          content={formData.shortdesc}
+                          onChange={(newContent) => setFormData({ ...formData, shortdesc: newContent })}
+                        />
+                      </div>
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label htmlFor="description" className="block text-left">Description</label>
@@ -991,25 +998,25 @@ export default function AdminCataloguesPage() {
                         {isTranslating ? 'Traduction en cours...' : '🔄 Traduction automatique depuis le français'}
                       </Button>
                     </div>
-                                         <div className="grid grid-cols-4 items-center gap-4">
-                       <label className="text-right">Titre</label>
-                       <div className="col-span-3 flex gap-2">
-                         <Input
-                           value={formData.title_en}
-                           onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
-                           className="flex-1"
-                         />
-                         <Button
-                           type="button"
-                           variant="outline"
-                           size="sm"
-                           onClick={() => translateField('title', 'fr', 'en')}
-                           disabled={isTranslating}
-                         >
-                           🔄
-                         </Button>
-                       </div>
-                     </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <label className="text-right">Titre</label>
+                      <div className="col-span-3 flex gap-2">
+                        <Input
+                          value={formData.title_en}
+                          onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => translateField('title', 'fr', 'en')}
+                          disabled={isTranslating}
+                        >
+                          🔄
+                        </Button>
+                      </div>
+                    </div>
                      
                      <div>
                        <div className="flex justify-between items-center mb-1">
