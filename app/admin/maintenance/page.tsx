@@ -359,7 +359,7 @@ export default function MaintenanceManagementPage() {
                         <div className="flex items-center space-x-2 space-x-reverse">
                           <User className="w-4 h-4 text-gray-500" />
                           <span className="text-sm text-gray-600">
-                            Effectué par : {maintenance.completedBy.name}
+                            Effectué par : {maintenance.completedBy.name || 'Non spécifié'}
                           </span>
                         </div>
                       )}
@@ -374,14 +374,16 @@ export default function MaintenanceManagementPage() {
                     </div>
                   </div>
                   {/* Informations sur la garantie */}
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Informations sur la garantie</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                      <div><span className="font-medium">Société :</span> {maintenance.garantieId.company}</div>
-                      <div><span className="font-medium">Client :</span> {maintenance.garantieId.name}</div>
-                      <div><span className="font-medium">Téléphone :</span> {maintenance.garantieId.phone}</div>
+                  {maintenance.garantieId && (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2">Informations sur la garantie</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                        <div><span className="font-medium">Société :</span> {maintenance.garantieId.company || 'Non spécifiée'}</div>
+                        <div><span className="font-medium">Client :</span> {maintenance.garantieId.name || 'Non spécifié'}</div>
+                        <div><span className="font-medium">Téléphone :</span> {maintenance.garantieId.phone || 'Non spécifié'}</div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {maintenance.notes && (
                     <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                       <h4 className="font-medium text-gray-900 mb-2">Remarques</h4>

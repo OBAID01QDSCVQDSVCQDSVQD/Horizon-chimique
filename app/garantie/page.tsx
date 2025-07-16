@@ -75,11 +75,34 @@ export default function GarantieIndex() {
     setLoading(true)
     setError(null)
     try {
-      const query = phone ? { phone, status: 'APPROVED' } : { status: 'APPROVED' };
+      let query: any = {};
+      
+      // إذا كان المستخدم APPLICATEUR، نعرض فقط ضماناته
+      if (isApplicateur) {
+        query.userId = session?.user?.id;
+        query.status = 'APPROVED';
+      } else if (isAdmin) {
+        // المدير يرى جميع الضمانات المعتمدة
+        query.status = 'APPROVED';
+        if (phone) query.phone = phone;
+      } else {
+        // المستخدمون العاديون والزوار يبحثون برقم الهاتف
+        if (phone) {
+          query.phone = phone;
+          query.status = 'APPROVED';
+        } else {
+          setError('Vous devez fournir un numéro de téléphone pour rechercher des garanties');
+          setGaranties([]);
+          setLoading(false);
+          return;
+        }
+      }
+      
       const url = `/api/garanties?${new URLSearchParams(query as Record<string, string>)}`
       console.log('=== FRONTEND DEBUG ===');
       console.log('Fetching URL:', url);
       console.log('Query params:', query);
+      console.log('User role:', session?.user?.role);
       
       const res = await fetch(url)
       const data = await res.json()
@@ -88,7 +111,7 @@ export default function GarantieIndex() {
       console.log('API Response Data:', data);
       
       if (res.status === 403) {
-        setError(data.error || 'Vous devez fournir un numéro de téléphone pour rechercher des garanties');
+        setError(data.error || 'Accès non autorisé');
         setGaranties([]);
         return;
       }
@@ -112,10 +135,26 @@ export default function GarantieIndex() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchPhone.trim()) {
+    
+    // إذا كان المستخدم عادي أو زائر، يجب أن يدخل رقم هاتف
+    if (!isAdmin && !isApplicateur && !searchPhone.trim()) {
       toast.error('Veuillez entrer un numéro de téléphone');
       return;
     }
+    
+    // إذا كان المدير يبحث، يجب أن يدخل رقم هاتف
+    if (isAdmin && !searchPhone.trim()) {
+      toast.error('Veuillez entrer un numéro de téléphone pour rechercher');
+      return;
+    }
+    
+    // إذا كان APPLICATEUR، لا يحتاج لرقم هاتف - يرى ضماناته فقط
+    if (isApplicateur) {
+      fetchGaranties();
+      return;
+    }
+    
+    // المدير والمستخدم العادي يبحثون برقم الهاتف
     fetchGaranties(searchPhone);
   };
 
@@ -234,12 +273,14 @@ export default function GarantieIndex() {
             </p>
           </div>
           {session?.user?.id && ['APPLICATEUR', 'ADMIN'].includes(session?.user?.role ?? '') && (
+            <div className="flex gap-3">
             <Link
-              href="/admin/garanties"
-              className="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded-xl text-base shadow transition"
+              href="/garantie/create"
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl text-base shadow transition"
             >
-              Gérer les garanties
+                + Ajouter une garantie
             </Link>
+            </div>
           )}
         </div>
 
@@ -303,7 +344,7 @@ export default function GarantieIndex() {
                       setSearchPhone('');
                       setError(null);
                       if (isAdmin || isApplicateur) {
-                        fetchGaranties();
+                      fetchGaranties();
                       } else {
                         setGaranties([]);
                         setHasSearched(false);
@@ -384,6 +425,7 @@ export default function GarantieIndex() {
                   </div>
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Client :</b> {g.name}</div>
+                <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Téléphone :</b> {g.phone}</div>
                 <div className="text-sm text-gray-700 dark:text-gray-200 mb-1"><b>Adresse :</b> {g.address}</div>
                 <div className="text-sm text-gray-700 dark:text-gray-200 mb-1">
                   <b>Surface :</b>{" "}

@@ -42,6 +42,15 @@ export default function AdminGarantiesPage() {
   const [searchCompany, setSearchCompany] = useState('')
   const [searchStatus, setSearchStatus] = useState('')
   const [searchDate, setSearchDate] = useState('')
+  
+  // إضافة حالة التصفح
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  })
+  const [selectedLimit, setSelectedLimit] = useState(10)
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -50,9 +59,9 @@ export default function AdminGarantiesPage() {
       return;
     }
     fetchGarantiesWithFilters();
-  }, [session, status])
+  }, [session, status, selectedLimit])
 
-  const fetchGarantiesWithFilters = async () => {
+  const fetchGarantiesWithFilters = async (page = 1) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -61,13 +70,33 @@ export default function AdminGarantiesPage() {
       if (searchCompany) params.append('company', searchCompany);
       if (searchStatus) params.append('status', searchStatus);
       if (searchDate) params.append('installDate', searchDate);
+      params.append('page', page.toString());
+      params.append('limit', selectedLimit.toString());
 
       const url = `/api/garanties?${params.toString()}`;
+      console.log('Fetching garanties with URL:', url);
+      console.log('Filters:', { searchPhone, searchName, searchCompany, searchStatus, searchDate });
+      
       const res = await fetch(url);
       const data = await res.json();
-      setGaranties(data.garanties || []);
+      
+      if (res.ok) {
+        setGaranties(data.garanties || []);
+        setPagination(data.pagination || {
+          page: 1,
+          limit: selectedLimit,
+          total: 0,
+          pages: 0
+        });
+        console.log('Garanties loaded:', data.garanties?.length || 0);
+      } else {
+        toast.error("Erreur lors du chargement des garanties");
+        setGaranties([]);
+      }
     } catch (error) {
+      console.error('Error fetching garanties:', error);
       toast.error("Erreur lors du chargement des garanties");
+      setGaranties([]);
     } finally {
       setLoading(false);
     }
@@ -142,6 +171,53 @@ export default function AdminGarantiesPage() {
     }
   };
 
+  const handleResetFilters = () => {
+    console.log('Resetting filters...');
+    // Reset all filter states
+    setSearchPhone('');
+    setSearchName('');
+    setSearchCompany('');
+    setSearchStatus('');
+    setSearchDate('');
+    
+    // Reset pagination to first page
+    setPagination(prev => ({ ...prev, page: 1 }));
+    
+    // Close filters modal
+    setShowFilters(false);
+    
+    // Fetch data without filters after state updates
+    setTimeout(() => {
+      const params = new URLSearchParams();
+      params.append('page', '1');
+      params.append('limit', selectedLimit.toString());
+      
+      const url = `/api/garanties?${params.toString()}`;
+      console.log('Fetching garanties after reset with URL:', url);
+      
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.garanties) {
+            setGaranties(data.garanties);
+            setPagination(data.pagination || {
+              page: 1,
+              limit: selectedLimit,
+              total: 0,
+              pages: 0
+            });
+            console.log('Garanties loaded after reset:', data.garanties.length);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching garanties after reset:', error);
+          toast.error("Erreur lors du chargement des garanties");
+        });
+    }, 100);
+    
+    console.log('Filters reset completed');
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -176,12 +252,40 @@ export default function AdminGarantiesPage() {
             </svg>
             Filtres
           </button>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Afficher:</label>
+              <select
+                value={selectedLimit}
+                onChange={(e) => {
+                  setSelectedLimit(Number(e.target.value));
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                }}
+                className="px-3 py-1 border rounded-lg text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            
+            <div className="text-sm text-gray-600">
+              {pagination.total > 0 && (
+                <>
+                  Affichage {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} 
+                  sur {pagination.total} garanties
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* نافذة الفلاتر */}
         {showFilters && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg relative animate-fade-in">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowFilters(false)}>
+            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg relative animate-fade-in" onClick={e => e.stopPropagation()}>
               <button
                 onClick={() => setShowFilters(false)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold"
@@ -190,33 +294,26 @@ export default function AdminGarantiesPage() {
                 &times;
               </button>
               <h2 className="text-xl font-bold mb-6 text-blue-700">Filtres avancés</h2>
-              <form
-                onSubmit={e => {
-                  e.preventDefault();
-                  fetchGarantiesWithFilters();
-                  setShowFilters(false);
-                }}
-                className="space-y-4"
-              >
+              <div className="space-y-4">
                 <input
                   type="text"
                   value={searchPhone}
                   onChange={e => setSearchPhone(e.target.value)}
-                  placeholder="Téléphone"
+                  placeholder="Rechercher par téléphone"
                   className="w-full px-4 py-2 border rounded-lg"
                 />
                 <input
                   type="text"
                   value={searchName}
                   onChange={e => setSearchName(e.target.value)}
-                  placeholder="Client"
+                  placeholder="Rechercher par nom du client"
                   className="w-full px-4 py-2 border rounded-lg"
                 />
                 <input
                   type="text"
                   value={searchCompany}
                   onChange={e => setSearchCompany(e.target.value)}
-                  placeholder="Société"
+                  placeholder="Rechercher par société"
                   className="w-full px-4 py-2 border rounded-lg"
                 />
                 <select
@@ -226,38 +323,36 @@ export default function AdminGarantiesPage() {
                 >
                   <option value="">Tous les statuts</option>
                   <option value="APPROVED">Approuvée</option>
-                  <option value="NOT_APPROVED">En attente</option>
+                  <option value="PENDING">En attente</option>
+                  <option value="REJECTED">Rejetée</option>
                 </select>
                 <input
                   type="date"
                   value={searchDate}
                   onChange={e => setSearchDate(e.target.value)}
+                  placeholder="Date d'installation"
                   className="w-full px-4 py-2 border rounded-lg"
                 />
                 <div className="flex gap-2 mt-4">
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={() => {
+                      fetchGarantiesWithFilters(1);
+                      setShowFilters(false);
+                    }}
                     className="flex-1 bg-blue-700 text-white rounded-lg py-2 font-bold hover:bg-blue-800 transition"
                   >
                     Appliquer
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setSearchPhone('');
-                      setSearchName('');
-                      setSearchCompany('');
-                      setSearchStatus('');
-                      setSearchDate('');
-                      fetchGarantiesWithFilters();
-                      setShowFilters(false);
-                    }}
+                    onClick={handleResetFilters}
                     className="flex-1 bg-gray-200 text-gray-700 rounded-lg py-2 font-bold hover:bg-gray-300 transition"
                   >
                     Réinitialiser
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         )}
@@ -353,6 +448,44 @@ export default function AdminGarantiesPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* أزرار التنقل بين الصفحات */}
+        {pagination.pages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-6">
+            <button
+              onClick={() => fetchGarantiesWithFilters(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+              className="px-3 py-2 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Précédent
+            </button>
+            
+            {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+              const pageNum = i + 1;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => fetchGarantiesWithFilters(pageNum)}
+                  className={`px-3 py-2 rounded-lg ${
+                    pageNum === pagination.page
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white border hover:bg-gray-50'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            
+            <button
+              onClick={() => fetchGarantiesWithFilters(pagination.page + 1)}
+              disabled={pagination.page >= pagination.pages}
+              className="px-3 py-2 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Suivant
+            </button>
           </div>
         )}
         {/* Modal de visualisation */}

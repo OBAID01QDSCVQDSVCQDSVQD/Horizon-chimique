@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar, FiShield, FiFileText, FiTool } from 'react-icons/fi'
+import { FiPackage, FiList, FiSettings, FiShoppingCart, FiMenu, FiX, FiTag, FiCalendar, FiShield, FiFileText, FiTool, FiUser } from 'react-icons/fi'
 import { useEffect, useState, useRef } from 'react'
 import ErrorBoundary from '@/components/shared/ErrorBoundary'
 import { Toaster } from 'react-hot-toast'
@@ -25,6 +25,11 @@ const menuItems = [
     title: 'Rendez-vous',
     href: '/admin/appointments',
     icon: FiCalendar
+  },
+  {
+    title: 'Utilisateurs',
+    href: '/admin/users',
+    icon: FiUser
   },
   {
     title: 'Catégories',

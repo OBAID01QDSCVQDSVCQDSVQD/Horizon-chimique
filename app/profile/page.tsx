@@ -33,11 +33,11 @@ export default function ProfilePage() {
       setLoadingUser(true);
       try {
         console.log('Fetching user data for ID:', session.user.id);
-        const res = await fetch(`/api/user/${session.user.id}`);
+      const res = await fetch(`/api/user/${session.user.id}`);
         console.log('API Response status:', res.status);
         
         if (res.ok) {
-          const data = await res.json();
+      const data = await res.json();
           console.log('User data received:', data);
           setUserData(data);
         } else {
@@ -48,7 +48,7 @@ export default function ProfilePage() {
       } catch (error) {
         console.error('Error fetching user:', error);
       } finally {
-        setLoadingUser(false);
+      setLoadingUser(false);
       }
     }
     fetchUser();
@@ -175,8 +175,8 @@ export default function ProfilePage() {
       const data = await response.json();
       console.log('Updated user data:', data);
       setUserData(data);
-      setShowEdit(false);
-      alert("Profil mis à jour avec succès !");
+        setShowEdit(false);
+        alert("Profil mis à jour avec succès !");
     } catch (error) {
       console.error('Erreur:', error);
       alert("Une erreur s'est produite lors de la mise à jour du profil");

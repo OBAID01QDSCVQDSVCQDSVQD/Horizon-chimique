@@ -494,7 +494,7 @@ export async function GET(
     const fileName = `garantie-${cleanName}.pdf`;
 
     console.log('PDF generated successfully, size:', pdfBytes.length);
-    
+
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',

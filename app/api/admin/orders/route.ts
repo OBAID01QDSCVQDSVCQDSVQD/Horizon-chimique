@@ -19,14 +19,56 @@ interface OrderDocument extends Document {
   }>;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     if (!process.env.MONGODB_URI) {
       throw new Error('MONGODB_URI is not defined in environment variables');
     }
+    
+    const { searchParams } = new URL(request.url);
+    
+    // معاملات التصفح
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const skip = (page - 1) * limit;
+
+    // معاملات الفلترة
+    const status = searchParams.get('status');
+    const phone = searchParams.get('phone');
+    const client = searchParams.get('client');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+
     await connectToDatabase();
-    const orders = await Order.find({})
+    
+    // بناء query الفلترة
+    const query: any = {};
+    if (status) query.status = status;
+    if (phone) query['shippingInfo.phone'] = { $regex: phone, $options: 'i' };
+    if (client) query['userId.name'] = { $regex: client, $options: 'i' };
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = toDate;
+      }
+    }
+
+    console.log('=== ORDERS API DEBUG ===');
+    console.log('Search Params:', Object.fromEntries(searchParams.entries()));
+    console.log('Query:', JSON.stringify(query, null, 2));
+    console.log('Pagination:', { page, limit, skip });
+
+    // جلب إجمالي عدد الأوردرات
+    const totalOrders = await Order.countDocuments(query);
+    
+    // جلب الأوردرات مع التصفح
+    const orders = await Order.find(query)
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .populate({
         path: 'userId',
         select: 'name email phone',
@@ -71,7 +113,18 @@ export async function GET() {
       };
     }));
 
-    return NextResponse.json({ orders: formattedOrders });
+    console.log('Found Orders Count:', formattedOrders.length);
+    console.log('Total Orders:', totalOrders);
+
+    return NextResponse.json({ 
+      orders: formattedOrders,
+      pagination: {
+        page,
+        limit,
+        total: totalOrders,
+        pages: Math.ceil(totalOrders / limit)
+      }
+    });
   } catch (error) {
     console.error('Error fetching orders:', error);
     return NextResponse.json(

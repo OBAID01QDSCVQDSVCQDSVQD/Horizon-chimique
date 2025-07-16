@@ -2,7 +2,9 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authConfig } from '@/auth'
 import GarantiesStatsCardWrapper from './GarantiesStatsCardWrapper'
-import { FaUsers, FaCogs, FaChartBar, FaFileAlt } from 'react-icons/fa'
+import UsersStatsCardWrapper from './UsersStatsCardWrapper'
+import { FaUsers, FaCogs, FaChartBar, FaFileAlt, FaUserShield } from 'react-icons/fa'
+import Link from 'next/link'
 
 export default async function AdminPage() {
   const session = await getServerSession(authConfig)
@@ -34,10 +36,10 @@ export default async function AdminPage() {
             <div className="text-gray-700">Rôle : <b>{session.user.role}</b></div>
             <div className="text-gray-700">Email : <b>{session.user.email}</b></div>
           </div>
-          <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition flex flex-col gap-2 border border-gray-100">
-            <div className="flex items-center gap-2 mb-2 text-purple-700"><FaFileAlt size={22} /><span className="text-lg font-semibold">Gestion du contenu</span></div>
-            <div className="text-gray-500">Ajoutez, modifiez ou supprimez le contenu du site.</div>
-          </div>
+          <Link href="/admin/users" className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition flex flex-col gap-2 border border-gray-100 cursor-pointer">
+            <div className="flex items-center gap-2 mb-2 text-purple-700"><FaUserShield size={22} /><span className="text-lg font-semibold">Gestion des utilisateurs</span></div>
+            <UsersStatsCardWrapper />
+          </Link>
           <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition flex flex-col gap-2 border border-gray-100">
             <div className="flex items-center gap-2 mb-2 text-green-700"><FaCogs size={22} /><span className="text-lg font-semibold">Paramètres</span></div>
             <div className="text-gray-500">Gérez les paramètres de la plateforme.</div>

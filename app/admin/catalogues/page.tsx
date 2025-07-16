@@ -123,6 +123,16 @@ export default function AdminCataloguesPage() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCatalogue, setEditingCatalogue] = useState<Catalogue | null>(null);
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false
+  });
   const [formData, setFormData] = useState({
     // الفرنسية (الافتراضية)
     title: '',
@@ -179,8 +189,8 @@ export default function AdminCataloguesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchCatalogues();
-  }, []);
+    fetchCatalogues(pagination.page);
+  }, [pagination.page]);
 
   // Emoji picker functions
   const insertEmoji = (emoji: any) => {
@@ -215,12 +225,17 @@ export default function AdminCataloguesPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showEmojiPicker]);
 
-  const fetchCatalogues = async () => {
+  const fetchCatalogues = async (page = 1) => {
     try {
-      const response = await fetch('/api/catalogues');
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', pagination.limit.toString());
+      
+      const response = await fetch(`/api/catalogues?${params.toString()}`);
       if (!response.ok) throw new Error('Erreur lors de la récupération des fiches techniques');
       const data = await response.json();
-      console.log('Fetched catalogues with translations:', data.map((c: any) => ({
+      
+      console.log('Fetched catalogues with translations:', data.catalogues?.map((c: any) => ({
         id: c._id,
         title: c.title,
         title_en: c.title_en,
@@ -228,7 +243,16 @@ export default function AdminCataloguesPage() {
         hasEnglish: !!c.title_en,
         hasArabic: !!c.title_ar
       })));
-      setCatalogues(data);
+      
+      setCatalogues(data.catalogues || []);
+      setPagination(data.pagination || {
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 0,
+        hasNext: false,
+        hasPrev: false
+      });
     } catch (error) {
       console.error('Erreur:', error);
       toast.error('Erreur lors de la récupération des fiches techniques');
@@ -260,7 +284,7 @@ export default function AdminCataloguesPage() {
           : 'Fiche Technique créée avec succès'
       );
       setIsDialogOpen(false);
-      fetchCatalogues();
+      fetchCatalogues(pagination.page);
       resetForm();
     } catch (error) {
       console.error('Erreur:', error);
@@ -281,7 +305,7 @@ export default function AdminCataloguesPage() {
       if (!response.ok) throw new Error('Erreur lors de la suppression');
 
       toast.success('Fiche Technique supprimée avec succès');
-      fetchCatalogues();
+      fetchCatalogues(pagination.page);
     } catch (error) {
       console.error('Erreur:', error);
               toast.error('Erreur lors de la suppression de la fiche technique');
@@ -1635,6 +1659,50 @@ export default function AdminCataloguesPage() {
                 })}
               </TableBody>
             </Table>
+          )}
+          
+          {/* Pagination Controls */}
+          {pagination.pages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-6">
+              <div className="text-sm text-gray-600">
+                Affichage {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} 
+                sur {pagination.total} fiches techniques
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchCatalogues(pagination.page - 1)}
+                  disabled={!pagination.hasPrev}
+                >
+                  Précédent
+                </Button>
+                
+                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                  const pageNum = i + 1;
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={pageNum === pagination.page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => fetchCatalogues(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchCatalogues(pagination.page + 1)}
+                  disabled={!pagination.hasNext}
+                >
+                  Suivant
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

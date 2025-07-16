@@ -6,15 +6,28 @@ import Catalogue from '@/models/Catalogue';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authConfig);
     if (!session) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const skip = (page - 1) * limit;
+
     await connectDB();
-    const catalogues = await Catalogue.find().sort({ createdAt: -1 });
+    
+    // Get total count for pagination
+    const total = await Catalogue.countDocuments();
+    
+    // Get paginated catalogues
+    const catalogues = await Catalogue.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
     
     // إضافة الحقول المفقودة تلقائياً للبيانات القديمة
     const cataloguesWithDefaults = catalogues.map(catalogue => {
@@ -61,7 +74,20 @@ export async function GET() {
       return cat;
     });
     
-    return NextResponse.json(cataloguesWithDefaults);
+    // Calculate pagination info
+    const pages = Math.ceil(total / limit);
+    
+    return NextResponse.json({
+      catalogues: cataloguesWithDefaults,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages,
+        hasNext: page < pages,
+        hasPrev: page > 1
+      }
+    });
   } catch (error) {
     console.error('Erreur lors de la récupération des catalogues:', error);
     return NextResponse.json(
