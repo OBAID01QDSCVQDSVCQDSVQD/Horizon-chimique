@@ -63,7 +63,7 @@ export default function UserButton({ onClose, isMobileOverlay }: UserButtonProps
               </div>
               <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Mon profil</Link>
               <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Mes commandes</Link>
-              <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Retours & Commandes</Link>
+              <Link href="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Mes commandes</Link>
               {session.user?.role === 'Admin' && (
                 <Link href="/admin/overview" className="block px-4 py-2 hover:bg-gray-100" onClick={handleClose}>Administration</Link>
               )}

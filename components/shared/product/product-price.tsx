@@ -24,6 +24,16 @@ const ProductPrice = ({
   if (price === undefined || price === null || isNaN(Number(price))) {
     return <span className={className}>Non disponible</span>;
   }
+
+  // For the new product page design, we want a cleaner display
+  if (!forListing) {
+    return (
+      <div className='text-4xl font-bold text-gray-900 dark:text-white'>
+        {price.toFixed(2)} DT
+      </div>
+    );
+  }
+
   const discountPercent = baseListPrice && basePrice
     ? Math.round(100 - (basePrice / baseListPrice) * 100)
     : Math.round(100 - (price / listPrice) * 100)

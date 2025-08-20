@@ -206,8 +206,8 @@ export default function Header() {
         </button>
         {/* Returns & Orders بجانب البحث للموبايل فقط */}
         <Link href={session?.user?.id ? "/orders" : "/myorders2"} className="mx-2 text-yellow-400 flex-col items-start font-bold text-base hover:text-yellow-500 transition flex items-center md:hidden">
-          <span className="text-xs">Retours</span>
-          <span className="font-bold text-sm">& Commandes</span>
+          <span className="text-xs">Mes</span>
+          <span className="font-bold text-sm">commandes</span>
         </Link>
         {/* يمين */}
         <div className="flex items-center gap-1 md:gap-2 w-auto flex-shrink-0">
@@ -220,8 +220,8 @@ export default function Header() {
             <UserButton />
           </div>
           <Link href={session?.user?.id ? "/orders" : "/myorders2"} className="hidden md:flex flex-col items-start px-2 cursor-pointer hover:underline">
-            <span className="text-xs">Retours</span>
-            <span className="font-bold text-sm">& Commandes</span>
+            <span className="text-xs">Mes</span>
+            <span className="font-bold text-sm">commandes</span>
           </Link>
 
           {/* أيقونة السلة للجوال */}
