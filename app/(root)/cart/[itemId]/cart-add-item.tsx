@@ -17,7 +17,7 @@ type CartItemWithAttributes = {
   clientId: string;
   product: string;
   slug: string;
-  category: string;
+  categories: string[];
   quantity: number;
   countInStock: number;
   price: number;

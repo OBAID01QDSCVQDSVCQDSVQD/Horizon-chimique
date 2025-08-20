@@ -89,7 +89,7 @@ export default function SelectVariant({
             {/* Attribute Header */}
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <Icon className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white text-lg">{attrName}</h4>
@@ -135,7 +135,7 @@ export default function SelectVariant({
                         </div>
                       ) : (
                         <div className="w-8 h-8 mx-auto bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                          <Icon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                          <Icon className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                         </div>
                       )}
                       
@@ -151,7 +151,7 @@ export default function SelectVariant({
                     {/* Hover Effect */}
                     <div className={`
                       absolute inset-0 rounded-xl transition-opacity duration-200
-                      ${isActive ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}
+                      ${isActive ? 'opacity-0' : 'opacity-0 group-hover:opacity-30'}
                       bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-800/30 dark:to-amber-800/30
                     `} />
                   </button>
@@ -177,7 +177,7 @@ export default function SelectVariant({
       {/* No Options Message */}
       {Object.keys(grouped).length === 0 && (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <FiPackage className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+          <FiPackage className="w-8 h-8 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
           <p>Aucune option disponible pour ce produit</p>
         </div>
       )}

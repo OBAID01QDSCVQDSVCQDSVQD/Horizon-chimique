@@ -30,7 +30,7 @@ export const GET = async (request: NextRequest) => {
     listType === 'history'
       ? { _id: { $in: productIds } }
       : categoryIds.length > 0
-        ? { category: { $in: categoryIds }, _id: { $nin: productIds } }
+        ? { categories: { $in: categoryIds }, _id: { $nin: productIds } }
         : { _id: { $nin: productIds } }
 
   const products = await Product.find(filter)

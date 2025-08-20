@@ -2,6 +2,7 @@ import { CartSchema, OrderItemSchema, ProductInputSchema, UserInputSchema, UserS
 import { z } from 'zod'
 
 export type IProductInput = z.infer<typeof ProductInputSchema> & {
+  categories?: string[];
   attributes?: {
     attribute: string;
     value: string;
@@ -37,6 +38,7 @@ export type Data = {
 export type OrderItem = z.infer<typeof OrderItemSchema> & {
   attributes?: { attribute: string; value: string }[];
   variantId?: string;
+  categories?: string[];
 };
 export type Cart = z.infer<typeof CartSchema>
 

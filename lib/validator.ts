@@ -18,7 +18,7 @@ const AttributeSchema = z.object({
 export const ProductInputSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').optional(),
   slug: z.string().min(3, 'Slug must be at least 3 characters').optional(),
-  category: z.string().min(1, 'Category is required').optional(),
+  categories: z.array(z.string()).min(1, 'Categories are required').optional(),
   images: z.array(z.string()).min(1, 'Product must have at least one image').optional(),
   brand: z.string().min(1, 'Brand is required').optional(),
   description: z.string().min(1, 'Description is required').optional(),
@@ -76,7 +76,7 @@ export const OrderItemSchema = z.object({
   product: z.string().min(1, 'Product is required'),
   name: z.string().min(1, 'Name is required'),
   slug: z.string().min(1, 'Slug is required'),
-  category: z.string().min(1, 'Category is required'),
+  categories: z.array(z.string()).min(1, 'Categories are required'),
   quantity: z
     .number()
     .int()

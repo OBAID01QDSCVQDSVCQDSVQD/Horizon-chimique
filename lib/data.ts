@@ -262,7 +262,7 @@ const products: IProductInput[] = [
   {
     name: 'Nike Mens Slim-fit Long-Sleeve T-Shirt',
     slug: toSlug('Nike Mens Slim-fit Long-Sleeve T-Shirt'),
-    category: 'T-Shirts',
+    categories: ['T-Shirts'],
     images: ['/images/p11-1.jpg', '/images/p11-2.jpg'],
     tags: ['new-arrival'],
     isPublished: true,
@@ -290,7 +290,7 @@ const products: IProductInput[] = [
   {
     name: 'Jerzees Long-Sleeve Heavyweight Blend T-Shirt',
     slug: toSlug('Jerzees Long-Sleeve Heavyweight Blend T-Shirt'),
-    category: 'T-Shirts',
+    categories: ['T-Shirts'],
     images: [
       '/images/p12-1.jpg',
       '/images/p12-2.jpg',
@@ -324,7 +324,7 @@ const products: IProductInput[] = [
   {
     name: "Jerzees Men's Long-Sleeve T-Shirt",
     slug: toSlug('Jerzees Men Long-Sleeve T-Shirt'),
-    category: 'T-Shirts',
+    categories: ['T-Shirts'],
     brand: 'Jerzees',
     images: ['/images/p13-1.jpg', '/images/p13-2.jpg'],
     tags: ['best-seller'],
@@ -354,7 +354,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       'Decrum Mens Plain Long Sleeve T-Shirt - Comfortable Soft Fashion V Neck Full Sleeves Jersey Shirts'
     ),
-    category: 'T-Shirts',
+    categories: ['T-Shirts'],
     brand: 'Jerzees',
     images: ['/images/p14-1.jpg', '/images/p14-2.jpg'],
     tags: ['todays-deal'],
@@ -384,7 +384,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       "Muscle Cmdr Men's Slim Fit Henley Shirt Long&Short Business Sleeve Casual 3 Metal Buton Placket Casual Stylish T-Shirt"
     ),
-    category: 'T-Shirts',
+    categories: ['T-Shirts'],
     brand: ' Muscle Cmdr',
     images: ['/images/p15-1.jpg', '/images/p15-2.jpg'],
     tags: ['new-arrival', 'featured'],
@@ -412,7 +412,7 @@ const products: IProductInput[] = [
   {
     name: 'Hanes Mens Long Sleeve Beefy Henley Shirt',
     slug: toSlug('Hanes Mens Long Sleeve Beefy Henley Shirt'),
-    category: 'T-Shirts',
+    categories: ['T-Shirts'],
     brand: 'Jerzees',
     images: ['/images/p16-1.jpg', '/images/p16-2.jpg'],
     tags: ['best-seller', 'todays-deal'],
@@ -441,7 +441,7 @@ const products: IProductInput[] = [
   {
     name: 'Silver Jeans Co. Mens Jace Slim Fit Bootcut Jeans',
     slug: toSlug('Silver Jeans Co. Mens Jace Slim Fit Bootcut Jeans'),
-    category: 'Jeans',
+    categories: ['Jeans'],
     brand: 'Silver Jeans Co',
     images: ['/images/p21-1.jpg', '/images/p21-2.jpg'],
     tags: ['new-arrival'],
@@ -471,7 +471,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       "Levi's mens 505 Regular Fit Jeans (Also Available in Big & Tall)"
     ),
-    category: 'Jeans',
+    categories: ['Jeans'],
     brand: "Levi's",
     images: ['/images/p22-1.jpg', '/images/p22-2.jpg'],
     tags: ['featured'],
@@ -499,7 +499,7 @@ const products: IProductInput[] = [
   {
     name: 'Essentials Mens Straight-Fit Stretch Jean',
     slug: toSlug('Essentials Mens Straight-Fit Stretch Jean'),
-    category: 'Jeans',
+    categories: ['Jeans'],
     brand: 'Essentials',
     images: ['/images/p23-1.jpg', '/images/p23-2.jpg'],
     tags: ['best-seller'],
@@ -529,7 +529,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       "Buffalo David Bitton Mens Men's Driven Relaxed Denim JeansJeans"
     ),
-    category: 'Jeans',
+    categories: ['Jeans'],
     brand: 'Buffalo David Bitton',
     images: ['/images/p24-1.jpg', '/images/p24-2.jpg'],
     tags: ['todays-deal'],
@@ -557,7 +557,7 @@ const products: IProductInput[] = [
   {
     name: 'Dickies Mens Relaxed Fit Carpenter Jean',
     slug: toSlug('Dickies Mens Relaxed Fit Carpenter Jean'),
-    category: 'Jeans',
+    categories: ['Jeans'],
     brand: 'Dickies',
     images: ['/images/p25-1.jpg', '/images/p25-2.jpg'],
     tags: ['new-arrival', 'featured'],
@@ -587,7 +587,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       'Wrangler mens Premium Performance Cowboy Cut Slim Fit Jean'
     ),
-    category: 'Jeans',
+    categories: ['Jeans'],
     brand: 'Wrangler',
     images: ['/images/p26-1.jpg', '/images/p26-2.jpg'],
     tags: ['best-seller', 'todays-deal'],
@@ -616,7 +616,7 @@ const products: IProductInput[] = [
   {
     name: "Seiko Men's Analogue Watch with Black Dial",
     slug: toSlug("Seiko Men's Analogue Watch with Black Dial"),
-    category: 'Wrist Watches',
+    categories: ['Wrist Watches'],
     brand: 'Seiko',
     images: ['/images/p31-1.jpg', '/images/p31-2.jpg'],
     tags: ['new-arrival'],
@@ -646,7 +646,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       'SEIKO 5 Sport SRPJ83 Beige Dial Nylon Automatic Watch, Beige, Automatic Watch'
     ),
-    category: 'Wrist Watches',
+    categories: ['Wrist Watches'],
     brand: 'Seiko',
     images: ['/images/p32-1.jpg', '/images/p32-2.jpg'],
     tags: ['featured'],
@@ -676,7 +676,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       "Casio Men's Heavy Duty Analog Quartz Stainless Steel Strap, Silver, 42 Casual Watch"
     ),
-    category: 'Wrist Watches',
+    categories: ['Wrist Watches'],
     brand: 'Casio',
     images: ['/images/p33-1.jpg', '/images/p33-2.jpg'],
     tags: ['best-seller'],
@@ -706,7 +706,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       'Casio Classic Silver-Tone Stainless Steel Band Date Indicator Watch'
     ),
-    category: 'Wrist Watches',
+    categories: ['Wrist Watches'],
     brand: 'Casio',
     images: ['/images/p34-1.jpg', '/images/p34-2.jpg'],
     tags: ['todays-deal'],
@@ -736,7 +736,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       "Fossil Men's Grant Stainless Steel Quartz Chronograph Watch"
     ),
-    category: 'Wrist Watches',
+    categories: ['Wrist Watches'],
     brand: 'Fossil',
     images: ['/images/p35-1.jpg', '/images/p35-2.jpg'],
     tags: ['new-arrival', 'featured'],
@@ -764,7 +764,7 @@ const products: IProductInput[] = [
   {
     name: "Fossil Men's Machine Stainless Steel Quartz Watch",
     slug: toSlug("Fossil Men's Machine Stainless Steel Quartz Watch"),
-    category: 'Wrist Watches',
+    categories: ['Wrist Watches'],
     brand: 'Fossil',
     images: ['/images/p36-1.jpg', '/images/p36-2.jpg'],
     tags: ['best-seller', 'todays-deal'],
@@ -795,7 +795,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       'adidas Mens Grand Court 2.0 Training Shoes Training Shoes'
     ),
-    category: 'Shoes',
+    categories: ['Shoes'],
     brand: 'adidas',
     images: ['/images/p41-1.jpg', '/images/p41-2.jpg'],
     tags: ['new-arrival'],
@@ -821,11 +821,11 @@ const products: IProductInput[] = [
     reviews: [],
   },
   {
-    name: "ziitop Men's Running Walking Shoes Fashion Sneakers Mesh Dress Shoes Business Oxfords Shoes Lightweight Casual Breathable Work Formal Shoes",
+    name: "ziitop Men's Running Walking Shoes Fashion Sneakers Mesh Dress Shoes Business Oxfords Shoes Business Oxfords Shoes Lightweight Casual Breathable Work Formal Shoes",
     slug: toSlug(
       "ziitop Men's Running Walking Shoes Fashion Sneakers Mesh Dress Shoes Business Oxfords Shoes Lightweight Casual Breathable Work Formal Shoes"
     ),
-    category: 'Shoes',
+    categories: ['Shoes'],
     brand: 'ziitop',
     images: ['/images/p42-1.jpg', '/images/p42-2.jpg'],
     tags: ['featured'],
@@ -855,7 +855,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       'Skechers mens Summits High Range Hands Free Slip-in Shoes Work shoe'
     ),
-    category: 'Shoes',
+    categories: ['Shoes'],
     brand: 'Skechers',
     images: ['/images/p43-1.jpg', '/images/p43-2.jpg'],
     tags: ['best-seller'],
@@ -885,7 +885,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       'DLWKIPV Mens Running Shoes Tennis Cross Training Sneakers Fashion Non Slip Outdoor Walking Jogging Shoes Mesh Light Flexible Comfortable Breathable Shoes'
     ),
-    category: 'Shoes',
+    categories: ['Shoes'],
     brand: 'DLWKIPV',
     images: ['/images/p44-1.jpg', '/images/p44-2.jpg'],
     tags: ['todays-deal'],
@@ -913,7 +913,7 @@ const products: IProductInput[] = [
   {
     name: "ASICS Men's GT-2000 13 Running Shoes",
     slug: toSlug("ASICS Men's GT-2000 13 Running Shoes"),
-    category: 'Shoes',
+    categories: ['Shoes'],
     brand: 'ASICS',
     images: ['/images/p45-1.jpg', '/images/p45-2.jpg'],
     tags: ['new-arrival', 'featured'],
@@ -943,7 +943,7 @@ const products: IProductInput[] = [
     slug: toSlug(
       "Mens Wearbreeze Shoes, Urban - Ultra Comfortable Shoes, Breeze Shoes for Men, Men's Mesh Dress Sneakers Business Shoes"
     ),
-    category: 'Shoes',
+    categories: ['Shoes'],
     brand: 'Generic',
     images: ['/images/p46-1.jpg', '/images/p46-2.jpg'],
     tags: ['best-seller', 'todays-deal'],

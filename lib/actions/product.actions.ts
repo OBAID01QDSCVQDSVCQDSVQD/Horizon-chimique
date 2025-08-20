@@ -205,7 +205,7 @@ export async function getRelatedProductsByCategory({
   const skipAmount = (Number(page) - 1) * limit
   const conditions = {
     isPublished: true,
-    category,
+    categories: category,
     _id: { $ne: productId },
   }
   const products = await Product.find(conditions)
@@ -254,7 +254,7 @@ export async function getAllProducts({
           },
         }
       : {}
-  const categoryFilter = category && category !== 'all' ? { category } : {}
+  const categoryFilter = category && category !== 'all' ? { categories: category } : {}
   const tagFilter = tag && tag !== 'all' ? { tags: tag } : {}
 
   const ratingFilter =
@@ -325,6 +325,6 @@ export async function getProductsByCategorySlug(slug: string) {
   await connectToDatabase();
   const category = await Category.findOne({ slug }).lean() as { _id: string } | null;
   if (!category) return [];
-  const products = await Product.find({ category: category._id, isPublished: true }).lean();
+  const products = await Product.find({ categories: category._id, isPublished: true }).lean();
   return JSON.parse(JSON.stringify(products));
 }

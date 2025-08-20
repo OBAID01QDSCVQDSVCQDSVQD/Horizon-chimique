@@ -164,10 +164,10 @@ export default function ProductDetailsClient({ product, relatedProducts, allAttr
         </div>
         <div className='flex w-full flex-col gap-2 md:p-5 col-span-2'>
           <div className='flex flex-col gap-3'>
-            <p className='p-medium-16 rounded-full bg-grey-500/10 text-grey-500'>
+            <p className='text-sm rounded-full bg-grey-500/10 text-grey-500 px-3 py-1'>
               Brand {product.brand}
             </p>
-            <h1 className='font-bold text-lg lg:text-xl'>{product.name}</h1>
+            <h1 className='font-bold text-base lg:text-lg'>{product.name}</h1>
             <div className='flex items-center gap-2'>
               <span>{product.avgRating?.toFixed(1)}</span>
               <Rating rating={product.avgRating} />
@@ -186,6 +186,26 @@ export default function ProductDetailsClient({ product, relatedProducts, allAttr
                 />
               </div>
             </div>
+            {/* معلومات إضافية عن المنتج */}
+            <div className='flex flex-wrap gap-2 mt-2'>
+              {product.tags && product.tags.length > 0 && (
+                <div className='flex gap-2'>
+                  {product.tags.map((tag: string) => (
+                    <span key={tag} className='px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full'>
+                      {tag === 'new-arrival' && 'Nouveau'}
+                      {tag === 'featured' && 'En vedette'}
+                      {tag === 'best-seller' && 'Meilleur vendeur'}
+                      {tag === 'todays-deal' && 'Offre du jour'}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {product.countInStock > 0 && (
+                <span className='px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full'>
+                  En stock: {product.countInStock}
+                </span>
+              )}
+            </div>
           </div>
           <div>
             <SelectVariant
@@ -200,7 +220,7 @@ export default function ProductDetailsClient({ product, relatedProducts, allAttr
           <div className='mt-2'>
             {allAttributesSelected && matchingVariant ? (
               <p className={
-                `text-lg font-semibold ${availableStock > 0 ? 'text-green-600' : 'text-red-600'}`
+                `text-base font-semibold ${availableStock > 0 ? 'text-green-600' : 'text-red-600'}`
               }>
                 {availableStock > 0
                   ? `${STOCK_TEXT} ${availableStock}`
@@ -208,7 +228,7 @@ export default function ProductDetailsClient({ product, relatedProducts, allAttr
               </p>
             ) : (
               <p className={
-                `text-lg font-semibold ${product.countInStock > 0 ? 'text-green-600' : 'text-red-600'}`
+                `text-base font-semibold ${product.countInStock > 0 ? 'text-green-600' : 'text-red-600'}`
               }>
                 {product.countInStock > 0
                   ? `${STOCK_TEXT} ${product.countInStock}`
@@ -235,7 +255,7 @@ export default function ProductDetailsClient({ product, relatedProducts, allAttr
             return (
               <Card className="p-4 mt-5">
                 <CardContent className="p-0 space-y-4">
-                  {ficheTechniqueTitle && <h2 className='font-bold text-lg'>{ficheTechniqueTitle}</h2>}
+                  {ficheTechniqueTitle && <h2 className='font-bold text-base'>{ficheTechniqueTitle}</h2>}
                   <Button
                     asChild
                     variant="secondary"
@@ -248,7 +268,7 @@ export default function ProductDetailsClient({ product, relatedProducts, allAttr
                       rel="noopener noreferrer"
                       className="flex items-center justify-center"
                     >
-                      <FiDownload className="h-4 w-4" />
+                      <FiDownload className="h-3 w-3" />
                       <span>Télécharger la fiche technique</span>
                     </a>
                   </Button>
@@ -257,7 +277,7 @@ export default function ProductDetailsClient({ product, relatedProducts, allAttr
             );
           })()}
           <div className='flex flex-col gap-2'>
-            <p className='p-bold-20 text-grey-600'>Description:</p>
+            <p className='font-bold text-base text-grey-600'>Description:</p>
             <div
               className='p-medium-16 lg:p-regular-18'
               dangerouslySetInnerHTML={{
@@ -290,7 +310,7 @@ export default function ProductDetailsClient({ product, relatedProducts, allAttr
                     product: product._id,
                     name: product.name,
                     slug: product.slug,
-                    category: product.categories[0],
+                    categories: [product.categories[0]],
                     image: matchingVariant?.image || product.images[0],
                     price: round2(displayPrice),
                     countInStock: availableStock,

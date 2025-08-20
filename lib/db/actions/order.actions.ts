@@ -178,7 +178,7 @@ export async function createOrderWithShipping(
         name: product.name || '',
         image: Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : '',
         slug: product.slug || '',
-        category: product.categories && product.categories.length > 0 ? (product.categories[0] as any).name || product.categories[0].toString() : '',
+        categories: product.categories && product.categories.length > 0 ? (product.categories[0] as any).name || product.categories[0].toString() : '',
         brand: product.brand || '',
         attributes: item.attributes || [],
         ...variantDetails,
